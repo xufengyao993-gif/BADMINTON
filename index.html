@@ -119,6 +119,7 @@ body.nl-badge .sheet{padding-bottom:calc(20px + max(var(--badge-h),env(safe-area
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 .btn.navy{background:var(--navy);border-color:var(--navy);color:var(--navy-fg)}
 .btn.danger{color:var(--bad)}
+.btn.armed{background:var(--warn);border-color:var(--warn);color:var(--surface)}
 .btn.danger.armed{background:var(--bad);border-color:var(--bad);color:var(--surface)}
 .btn.sm{height:32px;padding:0 10px;font-size:13.5px;border-radius:8px}
 .btn.block{width:100%;height:44px}
@@ -200,7 +201,27 @@ body.nl-badge .sheet{padding-bottom:calc(20px + max(var(--badge-h),env(safe-area
 .lz.cancelled{background:repeating-linear-gradient(135deg,var(--surface) 0 6px,var(--surface-2) 6px 12px);border-style:dashed;border-color:var(--line)}
 .lz.cancelled b{color:var(--muted);text-decoration:line-through}
 .lz .flag{position:absolute;right:4px;top:4px;width:14px;height:14px;color:var(--good)}
-.lz.absent .flag{color:var(--warn)}
+.lz.absent .flag{color:var(--bad)}
+.lz.pending{border:1.5px dashed var(--warn)}
+.lz.pending .flag{color:var(--warn)}
+.lz.free .flag{color:var(--navy)}
+/* 点名 */
+.rc-list{display:flex;flex-direction:column}
+.rc{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 8px;padding:8px 0;border-top:1px solid var(--line-soft)}
+.rc:first-child{border-top:0}
+.rc-main{display:flex;align-items:center;gap:10px;min-width:0;text-align:left}
+.rc-main .num{font-size:15px;font-weight:600;flex:none}
+.rc-nm{display:flex;flex-direction:column;min-width:0;line-height:1.3}
+.rc-nm b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.rc-nm small{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rc-act{display:flex;gap:6px;align-items:center}
+.rc-opts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px}
+.overdue{border-color:color-mix(in oklab,var(--warn) 50%,var(--line));padding:12px 16px;display:flex;flex-direction:column;gap:6px}
+.overdue .soon-h{color:var(--warn)}
+.navdot{display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--bad);color:#fff;font-size:10.5px;font-weight:700;line-height:1}
+.bnav button{position:relative}
+.bnav .navdot{position:absolute;top:7px;left:calc(50% + 6px)}
+.tabs .navdot{margin-left:6px;vertical-align:1px}
 .now{position:absolute;left:-1px;right:0;height:2px;background:var(--navy);z-index:3;pointer-events:none}
 .now::before{content:"";position:absolute;left:-4px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--hi);box-shadow:0 0 0 2px var(--navy)}
 @media (max-width:560px){.lz .v{display:none}.lz{padding:3px 3px}.lz .t{font-size:11.5px}.tt-row{grid-template-columns:32px repeat(7,minmax(0,1fr))}.tt-axis span{font-size:11.5px;right:4px}}
@@ -405,8 +426,10 @@ const mdTxt=s=>{const d=parseYmd(s);return `${d.getMonth()+1}/${d.getDate()}`;};
 const ymTxt=ym=>`${+ym.slice(0,4)}年${+ym.slice(5,7)}月`;
 const isoWeek=d=>{const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const day=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-day);const y0=new Date(Date.UTC(t.getUTCFullYear(),0,1));return Math.ceil(((t-y0)/864e5+1)/7);};
 const METHODS=['微信','支付宝','现金','银行转账','机构结算'];
-const STATE_LABEL={done:'已上',upcoming:'待上',absent:'缺席计费',cancelled:'已取消'};
-const STATE_CHIP={done:'good',upcoming:'acc',absent:'warn',cancelled:''};
+const STATE_LABEL={done:'已上',upcoming:'待上',pending:'待点名',absent:'缺席·扣课',free:'到了·不收费',cancelled:'请假/取消'};
+const STATE_CHIP={done:'good',upcoming:'acc',pending:'warn',absent:'bad',free:'navy',cancelled:''};
+// 点名结果（存在课程的 status 里）：attended 到了、absent 缺席照常扣课、cancelled 请假/取消不扣、free 到了但不收费；normal = 还没点名
+const RC_OPTS=[['attended','到了'],['absent','缺席·照常扣课'],['cancelled','请假·不扣'],['free','到了·不收费']];
 const ICON={
   week:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M8 13.5h3M8 17h3M14 13.5h2"/></svg>',
   clients:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.8a3.4 3.4 0 0 1 0 6.4M18.5 14.8c1.7.7 2.7 2.4 3 5.2"/></svg>',
@@ -607,7 +630,19 @@ const cName=id=>(client(id)||{}).name||'已删除';
 const sName=id=>{const n=cName(id).replace(/^示例·/,'').replace(/（[^）]*）|\([^)]*\)/g,'').trim();return n||cName(id);};
 const cColor=id=>{const c=client(id);return c?(c.color||0)%8:7;};
 const lessonEndTs=l=>parseYmd(l.date).getTime()+toMin(l.end)*60000;
-const lstate=l=>l.status==='cancelled'?'cancelled':l.status==='absent'?'absent':(lessonEndTs(l)<=Date.now()?'done':'upcoming');
+// 点名功能从这一天开始：之前的课不用补点名，过了时间就当作“已上”；从这天起的课，点了名才计费、扣课时
+const ROLLCALL_SINCE='2026-10-19';
+const marked=l=>['attended','absent','cancelled','free'].includes(l.status);
+const lstate=l=>{
+  const st=l.status;
+  if(st==='cancelled')return 'cancelled';
+  if(st==='absent')return 'absent';
+  if(st==='free')return 'free';
+  if(st==='attended')return 'done';
+  if(lessonEndTs(l)>Date.now())return 'upcoming';
+  return l.date<ROLLCALL_SINCE?'done':'pending';
+};
+const pendingLessons=()=>lessons().filter(l=>lstate(l)==='pending').sort(byTime);
 const charged=l=>{const s=lstate(l);return s==='done'||s==='absent';};
 const dur=l=>Math.max(0,(toMin(l.end)-toMin(l.start))/60);
 const byTime=(a,b)=>(a.date+a.start).localeCompare(b.date+b.start);
@@ -682,7 +717,7 @@ function periodData(prefix){
     hrs:sum(ch,dur)+sum(hs,h=>h.hours),count:r2(sum(ch,lu)+sum(hs,h=>h.count)),sessions:ch.length,
     pri:sum(ch.filter(l=>!isOrg(l.clientId)),l=>l.fee)+sum(hs.filter(h=>!isOrg(h.clientId)),h=>h.fee),
     org:sum(ch.filter(l=>isOrg(l.clientId)),l=>l.fee)+sum(hs.filter(h=>isOrg(h.clientId)),h=>h.fee),
-    upFee:sum(up,l=>l.fee),upN:up.length,cancel:ls.filter(l=>l.status==='cancelled').length,
+    upFee:sum(up,l=>l.fee),upN:up.length,cancel:ls.filter(l=>l.status==='cancelled').length,pend:ls.filter(l=>lstate(l)==='pending').length,
     received:sum(payments().filter(p=>p.date.startsWith(prefix)),p=>p.amount)+sum(hs,h=>h.paid)};
 }
 const hasDemo=()=>KINDS.some(k=>[...S[k].values()].some(o=>o.demo));
@@ -728,8 +763,9 @@ function render(){
   if(store.mode==='setup'){$('#fab').hidden=true;v.innerHTML=viewSetup();mountSetup();return;}
   if(store.mode==='auth'){$('#fab').hidden=true;v.innerHTML=viewAuth();mountAuth();return;}
   if(!app){$('#fab').hidden=true;return;}
-  $('#bnav').innerHTML=VIEWS.map(([k,t])=>`<button data-act="go" data-v="${k}" ${ui.view===k?'aria-current="page"':''}>${ICON[k]}<span>${t}</span></button>`).join('');
-  $('#tabs').innerHTML=VIEWS.map(([k,t])=>`<button data-act="go" data-v="${k}" ${ui.view===k?'aria-current="page"':''}>${t}</button>`).join('');
+  const pn=pendingLessons().length,dot=k=>k==='week'&&pn?`<span class="navdot" aria-label="${pn} 次课待点名">${pn>99?'99+':pn}</span>`:'';
+  $('#bnav').innerHTML=VIEWS.map(([k,t])=>`<button data-act="go" data-v="${k}" ${ui.view===k?'aria-current="page"':''}>${ICON[k]}<span>${t}</span>${dot(k)}</button>`).join('');
+  $('#tabs').innerHTML=VIEWS.map(([k,t])=>`<button data-act="go" data-v="${k}" ${ui.view===k?'aria-current="page"':''}>${t}${dot(k)}</button>`).join('');
   renderSync();
   const ready=store.pulled||total()>0;
   const fab=$('#fab');
@@ -753,15 +789,33 @@ function emptyStart(){
   <div class="bar-row"><button class="btn primary" data-act="newClient">${ICON.plus}添加学员 / 机构</button><button class="btn" data-act="loadDemo">载入示例数据</button></div></div>`;
 }
 
+function rcItem(l,withDate){
+  const st=lstate(l),c=client(l.clientId)||{},sm=c.id?summary(c):null,open=ui.rcOpen===l.id;
+  const info=[withDate?mdTxt(l.date)+' 周'+wdOf(l.date):'',byUnit(c)?nTxt(lu(l))+' 节':'',sm&&sm.remain!=null?'课时包剩 '+nTxt(sm.remain)+' 节':'',l.venue||''].filter(Boolean).join(' · ');
+  const act=marked(l)
+    ?`<span class="chip ${STATE_CHIP[st]}">${l.status==='attended'?'到了':STATE_LABEL[st]}</span><button class="btn sm" data-act="rcMore" data-id="${l.id}">改</button>`
+    :`<button class="btn sm primary" data-act="rc" data-id="${l.id}" data-s="attended">到了</button><button class="btn sm" data-act="rcMore" data-id="${l.id}" aria-label="其他点名结果">···</button>`;
+  const opts=open?`<div class="rc-opts">${RC_OPTS.filter(([k])=>k!==l.status&&(marked(l)||k!=='attended')).map(([k,t])=>`<button class="btn sm" data-act="rc" data-id="${l.id}" data-s="${k}">${t}</button>`).join('')}${marked(l)?`<button class="btn sm" data-act="rc" data-id="${l.id}" data-s="normal">撤销点名</button>`:''}</div>`:'';
+  return `<div class="rc c${cColor(l.clientId)}"><button class="rc-main" data-act="editLesson" data-id="${l.id}"><span class="dot"></span><span class="num">${l.start}</span><span class="rc-nm"><b>${esc(cName(l.clientId))}</b>${info?`<small>${esc(info)}</small>`:''}</span></button><span class="rc-act">${act}</span>${opts}</div>`;
+}
 function soonCard(){
   const now=new Date(),td=ymd(now),tm=ymd(addDays(now,1));
-  const live=l=>l.status!=='cancelled';
-  const today=lessons().filter(l=>l.date===td&&live(l)&&lessonEndTs(l)>Date.now()).sort(byTime);
-  const tmr=lessons().filter(l=>l.date===tm&&live(l)).sort(byTime);
+  const today=lessons().filter(l=>l.date===td&&(l.status!=='cancelled'||ui.rcOpen===l.id)).sort(byTime);
+  const tmr=lessons().filter(l=>l.date===tm&&l.status!=='cancelled').sort(byTime);
+  const todoN=today.filter(l=>!marked(l)).length;
   const item=l=>`<button class="soon-i c${cColor(l.clientId)}" data-act="editLesson" data-id="${l.id}"><span class="dot"></span><span class="num">${l.start}</span><span><b>${esc(cName(l.clientId))}</b>${l.venue?' · '+esc(l.venue):''}</span></button>`;
   const d=addDays(now,1);
-  return `<div class="panel soon">
-    <div><div class="soon-h"><span>今天还有</span><span class="sp"></span><span class="num">${today.length} 次课</span></div>${today.length?today.map(item).join(''):'<div class="none">今天没有要上的课了</div>'}</div>
+  const over=pendingLessons().filter(l=>l.date<td);
+  const shown=ui.rcAll?over:over.slice(0,5);
+  const overHtml=over.length?`<div class="panel overdue">
+      <div class="soon-h">${ICON.alert.replace('<svg','<svg width="16" height="16"')}<span>历史未点名</span><span class="sp"></span><span class="num">${over.length} 次</span></div>
+      <div class="hint">这些课已经过了时间还没点名，点名前不计费、也不扣课时。有空的时候逐个确认。</div>
+      <div class="rc-list">${shown.map(l=>rcItem(l,true)).join('')}</div>
+      <div class="inline">${over.length>shown.length?`<button class="btn sm" data-act="rcAll">展开全部 ${over.length} 次</button>`:''}<button class="btn sm" id="rc-bulk" data-act="rcBulk" data-orig="全部标为“到了”">全部标为“到了”</button></div>
+    </div>`:'';
+  return overHtml+`<div class="panel soon">
+    <div><div class="soon-h"><span>今日点名</span><span class="sp"></span><span class="num">${today.length?(todoN?`${todoN} 次没点`:'都点完了'):'今天没课'}</span></div>
+      ${today.length?`<div class="rc-list">${today.map(l=>rcItem(l,false)).join('')}</div>`:'<div class="none">今天没有课</div>'}</div>
     <div class="tmr"><div class="soon-h">${ICON.bell.replace('<svg','<svg width="16" height="16"')}<span>明天 · 周${WD[(d.getDay()+6)%7]} ${d.getMonth()+1}/${d.getDate()}</span><span class="sp"></span><span class="num">${tmr.length} 次课</span></div>
       ${tmr.length?tmr.map(item).join(''):'<div class="none">明天没有课</div>'}
       <button class="btn sm" data-act="remind" style="align-self:flex-start;margin-top:2px">${ICON.bell}设置手机提醒</button></div>
@@ -813,7 +867,7 @@ function viewWeek(){
     const blocks=placed.map(({l,k,cl})=>{
       const n=cl.lanes||1,st=lstate(l),fx=isFixed(l);
       const top=(toMin(l.start)-sH*60)/60*H,h=Math.max(22,dur(l)*H-2);
-      const flag=st==='done'?`<span class="flag">${ICON.check}</span>`:st==='absent'?`<span class="flag">${ICON.alert}</span>`:'';
+      const flag=st==='done'||st==='free'?`<span class="flag">${ICON.check}</span>`:st==='absent'||st==='pending'?`<span class="flag">${ICON.alert}</span>`:'';
       return `<button class="lz c${cColor(l.clientId)} ${st} ${fx?'fixed':'single'}" data-act="editLesson" data-id="${l.id}" style="top:${top}px;height:${h}px;left:calc(${k}*100%/${n});width:calc(100%/${n} - 4px)" title="${esc(cName(l.clientId))} ${l.start}–${l.end} ${esc(l.venue||'')} · ${byUnit(client(l.clientId))?nTxt(lu(l))+' 节 · ':''}${fx?'固定课':'单次课'} · ${STATE_LABEL[st]}">${flag}<b>${esc(sName(l.clientId))}</b><span class="t">${fx?ICON.loop:''}${l.start}</span>${h>60&&l.venue?`<span class="v">${esc(l.venue)}</span>`:''}</button>`;
     }).join('');
     const isT=ds[i]===today,wk=i>=5;
@@ -915,7 +969,7 @@ function viewStats(){
     out+=`<div class="tiles">
       <div class="tile hl"><span>全年课酬收入</span><b class="num">${money(d.income)}</b><small>私教 ${money(d.pri)} · 机构 ${money(d.org)} ${deltaTxt(d.income,prev.income)}</small></div>
       <div class="tile"><span>全年净收入</span><b class="num">${money(d.income-d.cost)}</b><small>扣除场地等成本 ${money(d.cost)}</small></div>
-      <div class="tile"><span>全年课时</span><b class="num">${hrsTxt(d.hrs)}<small> 小时</small></b><small>${nTxt(d.count)} 节 · ${d.sessions} 次 ${deltaTxt(d.hrs,prev.hrs)}</small></div>
+      <div class="tile"><span>全年课时</span><b class="num">${hrsTxt(d.hrs)}<small> 小时</small></b><small>${nTxt(d.count)} 节 · ${d.sessions} 次${d.pend?` · 待点名 ${d.pend} 次`:''} ${deltaTxt(d.hrs,prev.hrs)}</small></div>
       <div class="tile"><span>全年到账</span><b class="num">${money(d.received)}</b><small>${prev.income?`去年课酬 ${money(prev.income)}`:'实际收到的钱'}</small></div></div>`;
     const months=[...Array(12)].map((_,i)=>`${y}-${pad(i+1)}`).map(k=>({k,...periodData(k)}));
     const max=Math.max(1,...months.map(x=>x.pri+x.org));
@@ -938,7 +992,7 @@ function viewStats(){
   out+=`<div class="tiles">
     <div class="tile hl"><span>课酬收入</span><b class="num">${money(d.income)}</b><small>私教 ${money(d.pri)} · 机构 ${money(d.org)} ${deltaTxt(d.income,prev.income)}</small></div>
     <div class="tile"><span>净收入</span><b class="num">${money(d.income-d.cost)}</b><small>扣除场地等成本 ${money(d.cost)}</small></div>
-    <div class="tile"><span>已上课时</span><b class="num">${hrsTxt(d.hrs)}<small> 小时</small></b><small>${nTxt(d.count)} 节 · ${d.sessions} 次${d.cancel?` · 取消 ${d.cancel} 次`:''}${d.hisFee?' · 含补录':''}</small></div>
+    <div class="tile"><span>已上课时</span><b class="num">${hrsTxt(d.hrs)}<small> 小时</small></b><small>${nTxt(d.count)} 节 · ${d.sessions} 次${d.pend?` · <b style="font:inherit;color:var(--warn)">待点名 ${d.pend} 次</b>`:''}${d.cancel?` · 请假/取消 ${d.cancel} 次`:''}${d.hisFee?' · 含补录':''}</small></div>
     <div class="tile"><span>本月到账</span><b class="num">${money(d.received)}</b><small>${d.upN?`还有 ${d.upN} 次课待上，约 ${money(d.upFee)}`:'实际收到的钱'}</small></div></div>`;
   const months=[...Array(12)].map((_,i)=>addMonths(ym,i-11)).map(k=>({k,...periodData(k)}));
   const max=Math.max(1,...months.map(x=>x.pri+x.org));
@@ -1103,10 +1157,10 @@ function openLessonForm(opt){
       <div class="field"><label for="f-fee">课费（元）</label><input id="f-fee" inputmode="decimal" value="${v.fee}"></div>
       <div class="field"><label for="f-cost">场地费（元）</label><input id="f-cost" inputmode="decimal" value="${v.cost||0}"></div></div>
       <div class="calc" id="f-calc"></div></div>
-    <div class="field"><span class="lbl">状态</span><div class="seg" role="group" id="f-status">
-      <button type="button" data-s="normal" aria-pressed="${v.status==='normal'||!v.status}">正常上课</button>
-      <button type="button" data-s="absent" aria-pressed="${v.status==='absent'}">学员缺席(计费)</button>
-      <button type="button" data-s="cancelled" aria-pressed="${v.status==='cancelled'}">取消(不计费)</button></div></div>
+    <div class="field"><span class="lbl">点名</span><div class="seg" role="group" id="f-status">
+      <button type="button" data-s="normal" aria-pressed="${!marked(v)}">还没点名</button>
+      ${RC_OPTS.map(([k,t])=>`<button type="button" data-s="${k}" aria-pressed="${v.status===k}">${t}</button>`).join('')}</div>
+      <span class="hint">${v.date>=ROLLCALL_SINCE?'点名之后才计费、扣课时包：“到了”和“缺席·照常扣课”计费，“请假”和“到了·不收费”不计费。':'这节课在点名功能上线之前，没点名也按“已上”计费。'}</span></div>
     ${later.length>1?`<div class="field"><span class="lbl">修改范围</span><div class="seg" role="group" id="f-scope"><button type="button" data-sc="one" aria-pressed="true">只改这一次</button><button type="button" data-sc="after" aria-pressed="false">这次及之后 ${later.length} 次</button></div><span class="hint">“之后”只同步学员、时间、场地、节数和费用；状态只改这一次。</span></div>`:''}
     <div class="field"><label for="f-note">备注 / 上课内容</label><textarea id="f-note" placeholder="例如：正手高远球、步法">${esc(v.note||'')}</textarea></div>
     <div id="f-warn" class="warnbox" hidden></div>
@@ -1629,6 +1683,20 @@ const A={
   changeCfg:()=>{lsSet(CFG_KEY,null);CFG=null;session=null;lsSet(SESS_KEY,null);store.mode='setup';closeSheet();render();},
   legacyUp:()=>{const lg=legacy();if(!lg)return;const ops=[];KINDS.forEach(k=>(lg.d[k]||[]).forEach(o=>{if(o&&o.id)ops.push(['put',k,o]);}));commit(ops);lsSet(LEGACY_KEY,null);toast(`已把 ${ops.length} 条记录存到你的账号`);},
   legacyNo:()=>{lsSet(LEGACY_NO,'1');render();},
+  rcMore:t=>{ui.rcOpen=ui.rcOpen===t.dataset.id?null:t.dataset.id;render();},
+  rcAll:()=>{ui.rcAll=true;render();},
+  rc:t=>{
+    const l=S.lessons.get(t.dataset.id);if(!l)return;
+    const st=t.dataset.s;ui.rcOpen=null;
+    put('lessons',Object.assign({},l,{status:st}));
+    const c=client(l.clientId),sm=c?summary(c):null;
+    const label=st==='normal'?'已撤销点名':st==='attended'?'到了':(RC_OPTS.find(x=>x[0]===st)||[,''])[1];
+    toast(`${cName(l.clientId)} ${mdTxt(l.date)} ${l.start}：${label}${sm&&sm.remain!=null?`，课时包剩 ${nTxt(sm.remain)} 节`:''}`);
+  },
+  rcBulk:t=>{
+    const over=pendingLessons().filter(l=>l.date<ymd(new Date()));
+    armDelete(t,`确认：${over.length} 次全部记为“到了”`,()=>{commit(over.map(l=>['put','lessons',Object.assign({},l,{status:'attended'})]));toast(`已点名 ${over.length} 次课`);});
+  },
   install:async()=>{if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice;}catch(e){}installEvt=null;render();},
   installNo:()=>{lsSet('yuqiu-install-no','1');render();}
 };
