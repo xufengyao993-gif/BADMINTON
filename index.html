@@ -318,6 +318,9 @@ td .inline{flex-wrap:nowrap}
 .infobox{padding:9px 12px;border-radius:10px;background:color-mix(in oklab,var(--navy) 10%,var(--surface));color:var(--navy);font-size:13.5px}
 .errbox{padding:9px 12px;border-radius:10px;background:color-mix(in oklab,var(--bad) 12%,var(--surface));color:var(--bad);font-size:13.5px}
 .okbox{padding:9px 12px;border-radius:10px;background:color-mix(in oklab,var(--good) 13%,var(--surface));color:var(--good);font-size:13.5px}
+.row-fee{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px}
+.calc{font-size:13.5px;color:var(--navy);font-variant-numeric:tabular-nums}
+.calc.warn{color:var(--warn)}
 .fixedbox{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:12px;border:1px solid color-mix(in oklab,var(--accent) 35%,var(--line));background:color-mix(in oklab,var(--accent) 5%,var(--surface))}
 .wdpick{display:grid;grid-template-columns:repeat(7,minmax(0,44px));gap:5px}
 .wdpick button{width:100%;height:36px;border-radius:9px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:14px}
@@ -390,7 +393,7 @@ const weekStart=d=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());r
 const toMin=t=>{const[h,m]=String(t||'0:0').split(':').map(Number);return h*60+(m||0);};
 const fromMin=m=>`${pad(Math.floor(m/60))}:${pad(m%60)}`;
 const sum=(a,f)=>a.reduce((s,x)=>s+(Number(f(x))||0),0);
-const r2=n=>Math.round(n*100)/100;
+const r2=n=>{n=+n||0;const t=String(n);return t.includes('e')?Math.round(n*100)/100:Number(Math.round(Number(t+'e2'))+'e-2');};
 const money=n=>{n=r2(n||0);return (n<0?'-':'')+'¥'+Math.abs(n).toLocaleString('zh-CN',{maximumFractionDigits:2});};
 const short=n=>{n=Math.round(n||0);return n>=10000?(n/10000).toFixed(1).replace(/\.0$/,'')+'万':String(n);};
 const hrsTxt=h=>(Math.round(h*10)/10).toString();
@@ -612,8 +615,31 @@ const lessons=()=>[...S.lessons.values()];
 const payments=()=>[...S.payments.values()];
 const histories=()=>[...S.history.values()];
 const isFixed=l=>!!l.seriesId;
-function calcFee(c,start,end){if(!c)return 0;const h=(toMin(end)-toMin(start))/60;return c.rateUnit==='hour'?r2((+c.rate||0)*h):(+c.rate||0);}
-function rateTxt(c){return c.rate?`${money(c.rate)}/${c.rateUnit==='hour'?'小时':'节'}`:'未设课费';}
+// 按节收费：资料里填了“一节课多长”，就按上课时长自动折算节数；没填就跟以前一样，每次课算 1 节
+const PARTIAL={exact:'按实际比例算',halfDown:'不足半节不算',halfRound:'按半节四舍五入',wholeDown:'只算整节'};
+const byUnit=c=>!!c&&c.rateUnit!=='hour';
+const unitMin=c=>byUnit(c)&&+c.unitMin>0?+c.unitMin:0;
+const nTxt=n=>String(Math.round((+n||0)*100)/100);
+const lu=l=>l&&l.units!=null&&!isNaN(+l.units)?+l.units:1;   // 一条课程记录算几节（旧记录没有这个字段，算 1 节）
+function roundUnits(x,rule){
+  if(rule==='halfDown')return Math.floor(x*2+1e-9)/2;
+  if(rule==='halfRound')return Math.round(x*2)/2;
+  if(rule==='wholeDown')return Math.floor(x+1e-9);
+  return Math.round(x*1e6)/1e6;   // 按实际比例：内部保留精确值，显示时取 2 位小数
+}
+function calcUnits(c,start,end){
+  const um=unitMin(c);if(!um)return 1;
+  return Math.max(0,roundUnits((toMin(end)-toMin(start))/um,c.partial));
+}
+function calcFee(c,start,end,units){
+  if(!c)return 0;
+  if(!byUnit(c))return r2((+c.rate||0)*(toMin(end)-toMin(start))/60);
+  if(units!=null)return r2((+c.rate||0)*units);
+  const um=unitMin(c);if(!um)return r2(+c.rate||0);
+  const x=(toMin(end)-toMin(start))/um;
+  return r2((+c.rate||0)*(c.partial&&c.partial!=='exact'?roundUnits(x,c.partial):x));
+}
+function rateTxt(c){return c.rate?`${money(c.rate)}/${c.rateUnit==='hour'?'小时':'节'}${unitMin(c)?`（一节 ${nTxt(unitMin(c)/60)} 小时）`:''}`:'未设课费';}
 function summary(c){
   const ls=lessons().filter(l=>l.clientId===c.id);
   const ps=payments().filter(p=>p.clientId===c.id);
@@ -622,13 +648,13 @@ function summary(c){
   const hisN=sum(hs,h=>h.count),hisFee=sum(hs,h=>h.fee),hisPaid=sum(hs,h=>h.paid),hisH=sum(hs,h=>h.hours);
   const due=sum(ch,l=>l.fee)+hisFee, paid=sum(ps,p=>p.amount)+hisPaid;
   const pk=ps.filter(p=>+p.lessons>0);let remain=null;
-  if(pk.length){const first=pk.map(p=>p.date).sort()[0];remain=sum(pk,p=>p.lessons)-ch.filter(l=>l.date>=first).length;}
+  if(pk.length){const first=pk.map(p=>p.date).sort()[0];remain=r2(sum(pk,p=>p.lessons)-sum(ch.filter(l=>l.date>=first),lu));}
   const up=ls.filter(l=>lstate(l)==='upcoming').sort(byTime);
   const ym=ymOf(new Date());
   const firstYm=[...ch.map(l=>l.date.slice(0,7)),...hs.map(h=>h.ym)].sort()[0]||null;
   const lastDone=ch.slice().sort(byTime).pop();
-  return {ls,ps,hs,due,paid,balance:r2(paid-due),remain,next:up[0],upN:up.length,hrs:sum(ch,dur)+hisH,count:ch.length+hisN,hisN,
-    monthCount:ch.filter(l=>l.date.startsWith(ym)).length,firstYm,lastDone};
+  return {ls,ps,hs,due,paid,balance:r2(paid-due),remain,next:up[0],upN:up.length,hrs:sum(ch,dur)+hisH,count:r2(sum(ch,lu)+hisN),hisN,
+    monthCount:r2(sum(ch.filter(l=>l.date.startsWith(ym)),lu)),firstYm,lastDone};
 }
 function conflicts(date,start,end,ignore){
   const s=toMin(start),e=toMin(end);
@@ -653,7 +679,7 @@ function periodData(prefix){
   const hisFee=sum(hs,h=>h.fee);
   return {ls,ch,up,hs,
     lessonIncome:sum(ch,l=>l.fee),hisFee,income:sum(ch,l=>l.fee)+hisFee,cost:sum(ch,l=>l.cost),
-    hrs:sum(ch,dur)+sum(hs,h=>h.hours),count:ch.length+sum(hs,h=>h.count),
+    hrs:sum(ch,dur)+sum(hs,h=>h.hours),count:r2(sum(ch,lu)+sum(hs,h=>h.count)),sessions:ch.length,
     pri:sum(ch.filter(l=>!isOrg(l.clientId)),l=>l.fee)+sum(hs.filter(h=>!isOrg(h.clientId)),h=>h.fee),
     org:sum(ch.filter(l=>isOrg(l.clientId)),l=>l.fee)+sum(hs.filter(h=>isOrg(h.clientId)),h=>h.fee),
     upFee:sum(up,l=>l.fee),upN:up.length,cancel:ls.filter(l=>l.status==='cancelled').length,
@@ -735,8 +761,8 @@ function soonCard(){
   const item=l=>`<button class="soon-i c${cColor(l.clientId)}" data-act="editLesson" data-id="${l.id}"><span class="dot"></span><span class="num">${l.start}</span><span><b>${esc(cName(l.clientId))}</b>${l.venue?' · '+esc(l.venue):''}</span></button>`;
   const d=addDays(now,1);
   return `<div class="panel soon">
-    <div><div class="soon-h"><span>今天还有</span><span class="sp"></span><span class="num">${today.length} 节</span></div>${today.length?today.map(item).join(''):'<div class="none">今天没有要上的课了</div>'}</div>
-    <div class="tmr"><div class="soon-h">${ICON.bell.replace('<svg','<svg width="16" height="16"')}<span>明天 · 周${WD[(d.getDay()+6)%7]} ${d.getMonth()+1}/${d.getDate()}</span><span class="sp"></span><span class="num">${tmr.length} 节</span></div>
+    <div><div class="soon-h"><span>今天还有</span><span class="sp"></span><span class="num">${today.length} 次课</span></div>${today.length?today.map(item).join(''):'<div class="none">今天没有要上的课了</div>'}</div>
+    <div class="tmr"><div class="soon-h">${ICON.bell.replace('<svg','<svg width="16" height="16"')}<span>明天 · 周${WD[(d.getDay()+6)%7]} ${d.getMonth()+1}/${d.getDate()}</span><span class="sp"></span><span class="num">${tmr.length} 次课</span></div>
       ${tmr.length?tmr.map(item).join(''):'<div class="none">明天没有课</div>'}
       <button class="btn sm" data-act="remind" style="align-self:flex-start;margin-top:2px">${ICON.bell}设置手机提醒</button></div>
   </div>`;
@@ -760,7 +786,7 @@ function viewWeek(){
   </div>`;
   if(!S.clients.size)return out+emptyStart();
   const fixedN=live.filter(isFixed).length;
-  const sumHtml=`<div class="wk-sum"><span><b>${live.length}</b>节课</span><span><b>${fixedN}</b>固定 · <b>${live.length-fixedN}</b>单次</span><span><b>${hrsTxt(sum(live,dur))}</b>小时</span><span><b>${short(sum(live,l=>l.fee))}</b>元课酬</span><span><b>${doneN}</b>节已上</span></div>`;
+  const sumHtml=`<div class="wk-sum"><span><b>${live.length}</b>次课</span><span><b>${nTxt(sum(live,lu))}</b>节</span><span><b>${fixedN}</b>固定 · <b>${live.length-fixedN}</b>单次</span><span><b>${hrsTxt(sum(live,dur))}</b>小时</span><span><b>${short(sum(live,l=>l.fee))}</b>元课酬</span><span><b>${doneN}</b>次已上</span></div>`;
   if(ui.mode==='list'){
     let body='';
     days.forEach((d,i)=>{
@@ -788,7 +814,7 @@ function viewWeek(){
       const n=cl.lanes||1,st=lstate(l),fx=isFixed(l);
       const top=(toMin(l.start)-sH*60)/60*H,h=Math.max(22,dur(l)*H-2);
       const flag=st==='done'?`<span class="flag">${ICON.check}</span>`:st==='absent'?`<span class="flag">${ICON.alert}</span>`:'';
-      return `<button class="lz c${cColor(l.clientId)} ${st} ${fx?'fixed':'single'}" data-act="editLesson" data-id="${l.id}" style="top:${top}px;height:${h}px;left:calc(${k}*100%/${n});width:calc(100%/${n} - 4px)" title="${esc(cName(l.clientId))} ${l.start}–${l.end} ${esc(l.venue||'')} · ${fx?'固定课':'单次课'} · ${STATE_LABEL[st]}">${flag}<b>${esc(sName(l.clientId))}</b><span class="t">${fx?ICON.loop:''}${l.start}</span>${h>60&&l.venue?`<span class="v">${esc(l.venue)}</span>`:''}</button>`;
+      return `<button class="lz c${cColor(l.clientId)} ${st} ${fx?'fixed':'single'}" data-act="editLesson" data-id="${l.id}" style="top:${top}px;height:${h}px;left:calc(${k}*100%/${n});width:calc(100%/${n} - 4px)" title="${esc(cName(l.clientId))} ${l.start}–${l.end} ${esc(l.venue||'')} · ${byUnit(client(l.clientId))?nTxt(lu(l))+' 节 · ':''}${fx?'固定课':'单次课'} · ${STATE_LABEL[st]}">${flag}<b>${esc(sName(l.clientId))}</b><span class="t">${fx?ICON.loop:''}${l.start}</span>${h>60&&l.venue?`<span class="v">${esc(l.venue)}</span>`:''}</button>`;
     }).join('');
     const isT=ds[i]===today,wk=i>=5;
     const now=isT&&nowMin>=sH*60&&nowMin<=eH*60?`<div class="now" style="top:${(nowMin-sH*60)/60*H}px"></div>`:'';
@@ -802,7 +828,7 @@ function viewWeek(){
 function lessonRow(l){
   const st=lstate(l),fx=isFixed(l);
   return `<button class="row c${cColor(l.clientId)}" data-act="editLesson" data-id="${l.id}"><span class="stripe"></span><span class="tm">${l.start}–${l.end}</span>
-    <span class="mid"><b>${esc(cName(l.clientId))}</b><span>${fx?'固定课':'单次课'} · ${esc(l.venue||'未填场地')}${l.note?' · '+esc(l.note):''}</span></span>
+    <span class="mid"><b>${esc(cName(l.clientId))}</b><span>${byUnit(client(l.clientId))?nTxt(lu(l))+' 节 · ':''}${fx?'固定课':'单次课'} · ${esc(l.venue||'未填场地')}${l.note?' · '+esc(l.note):''}</span></span>
     <span class="chip ${STATE_CHIP[st]}">${STATE_LABEL[st]}</span><span class="amt">${st==='cancelled'?'—':money(l.fee)}</span></button>`;
 }
 
@@ -823,7 +849,7 @@ function viewClients(){
     const fx=seriesList(c.id).filter(x=>x.up.length);
     return `<button class="card c${(c.color||0)%8}" data-act="clientDetail" data-id="${c.id}">
       <div class="card-h"><span class="ava">${esc(String(c.name).replace(/^示例·/,'').slice(0,1))}</span><span class="nm"><b>${esc(c.name)}</b><span>${c.type==='org'?'机构':'私教学员'} · ${rateTxt(c)}${s.firstYm?` · ${+s.firstYm.slice(0,4)}.${+s.firstYm.slice(5)} 起`:''}</span></span>${c.archived?'<span class="chip">已停用</span>':''}</div>
-      <div class="kv"><div><span>累计上课</span><b>${s.count}<small> 节</small></b></div>
+      <div class="kv"><div><span>累计上课</span><b>${nTxt(s.count)}<small> 节</small></b></div>
         <div><span>${balLbl}</span><b class="${s.balance<0?'neg':s.balance>0?'pos':''}">${money(Math.abs(s.balance))}</b></div>${third}</div>
       <div class="next">${fx.length?`<span class="chip acc">${ICON.loop}固定 ${esc(wdsTxt(fx[0].wds))} ${fx[0].last.start}</span>`:''}${s.next?`<span>下次 ${mdTxt(s.next.date)} 周${wdOf(s.next.date)} ${s.next.start}</span>`:`<span>${s.lastDone?'最近一次 '+s.lastDone.date:'暂无待上的课'}</span>`}</div>
     </button>`;}).join('')+'</div>';
@@ -844,7 +870,7 @@ function viewPay(){
     <div class="tile"><span>本月已到账</span><b class="num">${money(sum(thisM,p=>p.amount))}</b><small>${thisM.length} 笔</small></div>
     <div class="tile"><span>预收余额</span><b class="num">${money(sum(pre,x=>x.s.balance))}</b><small>学员预付还没上完的部分</small></div></div>`;
   out+=`<div class="panel"><div class="panel-h"><h3>待收款</h3><span class="sp"></span><span class="hint">已上课的课费减去已收款</span></div>`;
-  out+=owe.length?owe.map(({c,s})=>`<div class="row c${(c.color||0)%8}"><span class="stripe"></span><span class="mid"><b>${esc(c.name)}</b><span>${c.type==='org'?'机构待结算':'学员欠费'} · 已上 ${s.count} 节 · 已收 ${money(s.paid)}</span></span>
+  out+=owe.length?owe.map(({c,s})=>`<div class="row c${(c.color||0)%8}"><span class="stripe"></span><span class="mid"><b>${esc(c.name)}</b><span>${c.type==='org'?'机构待结算':'学员欠费'} · 已上 ${nTxt(s.count)} 节 · 已收 ${money(s.paid)}</span></span>
       <span class="amt neg">${money(-s.balance)}</span><button class="btn sm primary" data-act="newPay" data-client="${c.id}" data-amount="${-s.balance}">记收款</button></div>`).join('')
     :'<div class="empty">没有待收款，账都结清了。</div>';
   out+='</div>';
@@ -869,11 +895,11 @@ function deltaTxt(cur,prev){
 function breakdownTable(d){
   const rows=clientsArr(true).map(c=>{
     const cl=d.ch.filter(l=>l.clientId===c.id),hs=d.hs.filter(h=>h.clientId===c.id);
-    return {c,n:cl.length+sum(hs,h=>h.count),h:sum(cl,dur)+sum(hs,h=>h.hours),inc:sum(cl,l=>l.fee)+sum(hs,h=>h.fee),cost:sum(cl,l=>l.cost),his:hs.length>0};
+    return {c,n:r2(sum(cl,lu)+sum(hs,h=>h.count)),h:sum(cl,dur)+sum(hs,h=>h.hours),inc:sum(cl,l=>l.fee)+sum(hs,h=>h.fee),cost:sum(cl,l=>l.cost),his:hs.length>0};
   }).filter(r=>r.n||r.inc).sort((a,b)=>b.inc-a.inc);
   const tot=Math.max(1,d.income);
   return rows.length?`<div class="tbl-wrap"><table><thead><tr><th>学员 / 机构</th><th class="n">节数</th><th class="n">小时</th><th class="n">课酬</th><th class="n">成本</th><th>占比</th></tr></thead><tbody>${rows.map(r=>`<tr class="c${(r.c.color||0)%8} click" data-act="clientDetail" data-id="${r.c.id}">
-    <td><span class="inline"><span class="dot"></span>${esc(r.c.name)}${r.his?' <span class="chip">含补录</span>':''}</span></td><td class="n">${r.n}</td><td class="n">${hrsTxt(r.h)}</td><td class="n">${money(r.inc)}</td><td class="n">${r.cost?money(r.cost):'—'}</td>
+    <td><span class="inline"><span class="dot"></span>${esc(r.c.name)}${r.his?' <span class="chip">含补录</span>':''}</span></td><td class="n">${nTxt(r.n)}</td><td class="n">${hrsTxt(r.h)}</td><td class="n">${money(r.inc)}</td><td class="n">${r.cost?money(r.cost):'—'}</td>
     <td><span class="share"><i style="width:${r.inc/tot*100}%"></i></span></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">这段时间还没有上过课。</div>';
 }
 function viewStats(){
@@ -889,7 +915,7 @@ function viewStats(){
     out+=`<div class="tiles">
       <div class="tile hl"><span>全年课酬收入</span><b class="num">${money(d.income)}</b><small>私教 ${money(d.pri)} · 机构 ${money(d.org)} ${deltaTxt(d.income,prev.income)}</small></div>
       <div class="tile"><span>全年净收入</span><b class="num">${money(d.income-d.cost)}</b><small>扣除场地等成本 ${money(d.cost)}</small></div>
-      <div class="tile"><span>全年课时</span><b class="num">${hrsTxt(d.hrs)}<small> 小时</small></b><small>${d.count} 节 ${deltaTxt(d.hrs,prev.hrs)}</small></div>
+      <div class="tile"><span>全年课时</span><b class="num">${hrsTxt(d.hrs)}<small> 小时</small></b><small>${nTxt(d.count)} 节 · ${d.sessions} 次 ${deltaTxt(d.hrs,prev.hrs)}</small></div>
       <div class="tile"><span>全年到账</span><b class="num">${money(d.received)}</b><small>${prev.income?`去年课酬 ${money(prev.income)}`:'实际收到的钱'}</small></div></div>`;
     const months=[...Array(12)].map((_,i)=>`${y}-${pad(i+1)}`).map(k=>({k,...periodData(k)}));
     const max=Math.max(1,...months.map(x=>x.pri+x.org));
@@ -900,8 +926,8 @@ function viewStats(){
         <span class="bl">${+x.k.slice(5)}<em>月</em></span></button>`).join('')}</div></div></div>`;
     const mrows=months.filter(x=>x.count||x.received||x.upN);
     out+=`<div class="panel"><div class="panel-h"><h3>月度明细</h3></div>${mrows.length?`<div class="tbl-wrap"><table><thead><tr><th>月份</th><th class="n">节数</th><th class="n">小时</th><th class="n">课酬</th><th class="n">成本</th><th class="n">净收入</th><th class="n">到账</th></tr></thead><tbody>
-      ${mrows.map(x=>`<tr class="click" data-act="pickMonth" data-ym="${x.k}"><td>${+x.k.slice(5)}月${x.hs.length?' <span class="chip">含补录</span>':''}${x.upN?` <span class="chip acc">待上 ${x.upN}</span>`:''}</td><td class="n">${x.count}</td><td class="n">${hrsTxt(x.hrs)}</td><td class="n">${money(x.income)}</td><td class="n">${x.cost?money(x.cost):'—'}</td><td class="n">${money(x.income-x.cost)}</td><td class="n">${money(x.received)}</td></tr>`).join('')}
-      <tr class="tot"><td>合计</td><td class="n">${d.count}</td><td class="n">${hrsTxt(d.hrs)}</td><td class="n">${money(d.income)}</td><td class="n">${d.cost?money(d.cost):'—'}</td><td class="n">${money(d.income-d.cost)}</td><td class="n">${money(d.received)}</td></tr></tbody></table></div>`:'<div class="empty">这一年还没有记录。</div>'}</div>`;
+      ${mrows.map(x=>`<tr class="click" data-act="pickMonth" data-ym="${x.k}"><td>${+x.k.slice(5)}月${x.hs.length?' <span class="chip">含补录</span>':''}${x.upN?` <span class="chip acc">待上 ${x.upN}</span>`:''}</td><td class="n">${nTxt(x.count)}</td><td class="n">${hrsTxt(x.hrs)}</td><td class="n">${money(x.income)}</td><td class="n">${x.cost?money(x.cost):'—'}</td><td class="n">${money(x.income-x.cost)}</td><td class="n">${money(x.received)}</td></tr>`).join('')}
+      <tr class="tot"><td>合计</td><td class="n">${nTxt(d.count)}</td><td class="n">${hrsTxt(d.hrs)}</td><td class="n">${money(d.income)}</td><td class="n">${d.cost?money(d.cost):'—'}</td><td class="n">${money(d.income-d.cost)}</td><td class="n">${money(d.received)}</td></tr></tbody></table></div>`:'<div class="empty">这一年还没有记录。</div>'}</div>`;
     out+=`<div class="panel"><div class="panel-h"><h3>全年收入来源</h3></div>${breakdownTable(d)}</div>`;
     return out;
   }
@@ -912,8 +938,8 @@ function viewStats(){
   out+=`<div class="tiles">
     <div class="tile hl"><span>课酬收入</span><b class="num">${money(d.income)}</b><small>私教 ${money(d.pri)} · 机构 ${money(d.org)} ${deltaTxt(d.income,prev.income)}</small></div>
     <div class="tile"><span>净收入</span><b class="num">${money(d.income-d.cost)}</b><small>扣除场地等成本 ${money(d.cost)}</small></div>
-    <div class="tile"><span>已上课时</span><b class="num">${hrsTxt(d.hrs)}<small> 小时</small></b><small>${d.count} 节${d.cancel?` · 取消 ${d.cancel} 节`:''}${d.hisFee?' · 含补录':''}</small></div>
-    <div class="tile"><span>本月到账</span><b class="num">${money(d.received)}</b><small>${d.upN?`还有 ${d.upN} 节待上，约 ${money(d.upFee)}`:'实际收到的钱'}</small></div></div>`;
+    <div class="tile"><span>已上课时</span><b class="num">${hrsTxt(d.hrs)}<small> 小时</small></b><small>${nTxt(d.count)} 节 · ${d.sessions} 次${d.cancel?` · 取消 ${d.cancel} 次`:''}${d.hisFee?' · 含补录':''}</small></div>
+    <div class="tile"><span>本月到账</span><b class="num">${money(d.received)}</b><small>${d.upN?`还有 ${d.upN} 次课待上，约 ${money(d.upFee)}`:'实际收到的钱'}</small></div></div>`;
   const months=[...Array(12)].map((_,i)=>addMonths(ym,i-11)).map(k=>({k,...periodData(k)}));
   const max=Math.max(1,...months.map(x=>x.pri+x.org));
   out+=`<div class="panel"><div class="panel-h"><h3>近 12 个月课酬</h3><span class="sp"></span><span class="hint">点柱子切换月份</span></div>${legend}
@@ -1046,7 +1072,8 @@ function openLessonForm(opt){
   else{
     const c=client(opt.clientId)||client(ui.lastClient)||cs[0];
     const start=opt.start||'19:00',end=fromMin(Math.min(toMin(start)+(+c.dur||90),23*60+55));
-    v={clientId:c.id,date:opt.date||ymd(new Date()),start,end,venue:c.venue||'',fee:calcFee(c,start,end),cost:+c.cost||0,status:'normal',note:''};
+    const units=calcUnits(c,start,end);
+    v={clientId:c.id,date:opt.date||ymd(new Date()),start,end,venue:c.venue||'',units,fee:calcFee(c,start,end,units),cost:+c.cost||0,status:'normal',note:''};
   }
   const series=l&&l.seriesId?lessons().filter(x=>x.seriesId===l.seriesId).sort(byTime):[];
   const later=l?series.filter(x=>x.date>=l.date):[];
@@ -1055,7 +1082,7 @@ function openLessonForm(opt){
   const sInfo=series.length?{wds:[...new Set(series.map(x=>wdIdx(x.date)))].sort(),done:series.filter(charged).length,up:series.filter(x=>lstate(x)==='upcoming').length}:null;
   openSheet(`${sheetHead(l?'编辑课程':'排课')}
     ${l?`<div class="inline"><span class="chip ${STATE_CHIP[st]}">${STATE_LABEL[st]}</span>${series.length?`<span class="chip acc">${ICON.loop}固定课</span>`:'<span class="chip">单次课</span>'}<span class="hint">${l.date} 周${wdOf(l.date)}</span></div>
-      ${sInfo?`<div class="infobox">这节属于固定课：每${esc(wdsTxt(sInfo.wds))} ${l.start}，共 ${series.length} 节（已上 ${sInfo.done}，待上 ${sInfo.up}），排到 ${series[series.length-1].date}。</div>`:''}`
+      ${sInfo?`<div class="infobox">这节属于固定课：每${esc(wdsTxt(sInfo.wds))} ${l.start}，共 ${series.length} 次（已上 ${sInfo.done}，待上 ${sInfo.up}），排到 ${series[series.length-1].date}。</div>`:''}`
     :`<div class="field"><span class="lbl">课程类型</span><div class="seg big" role="group" id="f-kind">
         <button type="button" data-k="single" aria-pressed="${!startFixed}">单次课<small>临时约的、只上这一次</small></button>
         <button type="button" data-k="fixed" aria-pressed="${startFixed}">固定课<small>每周固定时间循环上</small></button></div></div>`}
@@ -1071,18 +1098,21 @@ function openLessonForm(opt){
         <input type="date" class="inp" id="f-until" style="width:auto" hidden value="${ymd(addDays(parseYmd(v.date),7*12))}"></div></div>
       <div class="hint" id="f-preview"></div></div>`:''}
     <div class="field"><label for="f-venue">场地</label><input id="f-venue" list="f-venues" value="${esc(v.venue)}" placeholder="例如：奥体中心 3号场"><datalist id="f-venues">${venues().map(x=>`<option value="${esc(x)}">`).join('')}</datalist></div>
-    <div class="row2"><div class="field"><label for="f-fee">课费（元/节）</label><input id="f-fee" inputmode="decimal" value="${v.fee}"></div>
-      <div class="field"><label for="f-cost">场地费等成本（元/节）</label><input id="f-cost" inputmode="decimal" value="${v.cost||0}"></div></div>
+    <div class="field"><div class="row-fee">
+      <div class="field" id="f-units-w" ${byUnit(client(v.clientId))?'':'hidden'}><label for="f-units">节数</label><input id="f-units" inputmode="decimal" value="${nTxt(lu(v))}"></div>
+      <div class="field"><label for="f-fee">课费（元）</label><input id="f-fee" inputmode="decimal" value="${v.fee}"></div>
+      <div class="field"><label for="f-cost">场地费（元）</label><input id="f-cost" inputmode="decimal" value="${v.cost||0}"></div></div>
+      <div class="calc" id="f-calc"></div></div>
     <div class="field"><span class="lbl">状态</span><div class="seg" role="group" id="f-status">
       <button type="button" data-s="normal" aria-pressed="${v.status==='normal'||!v.status}">正常上课</button>
       <button type="button" data-s="absent" aria-pressed="${v.status==='absent'}">学员缺席(计费)</button>
       <button type="button" data-s="cancelled" aria-pressed="${v.status==='cancelled'}">取消(不计费)</button></div></div>
-    ${later.length>1?`<div class="field"><span class="lbl">修改范围</span><div class="seg" role="group" id="f-scope"><button type="button" data-sc="one" aria-pressed="true">只改这一节</button><button type="button" data-sc="after" aria-pressed="false">这节及之后 ${later.length} 节</button></div><span class="hint">“之后”只同步学员、时间、场地和费用；状态只改这一节。</span></div>`:''}
+    ${later.length>1?`<div class="field"><span class="lbl">修改范围</span><div class="seg" role="group" id="f-scope"><button type="button" data-sc="one" aria-pressed="true">只改这一次</button><button type="button" data-sc="after" aria-pressed="false">这次及之后 ${later.length} 次</button></div><span class="hint">“之后”只同步学员、时间、场地、节数和费用；状态只改这一次。</span></div>`:''}
     <div class="field"><label for="f-note">备注 / 上课内容</label><textarea id="f-note" placeholder="例如：正手高远球、步法">${esc(v.note||'')}</textarea></div>
     <div id="f-warn" class="warnbox" hidden></div>
     <div class="actions">${l?'<button class="btn danger" id="f-del" data-orig="删除">删除</button>':''}<span class="sp"></span><button class="btn" data-act="close">取消</button><button class="btn primary" id="f-save">保存</button></div>`,
   sheet=>{
-    let feeTouched=!!l,costTouched=!!l,status=v.status||'normal',scope='one',fixed=startFixed,untilMode='weeks',wdsTouched=false;
+    let costTouched=!!l,status=v.status||'normal',scope='one',fixed=startFixed,untilMode='weeks',wdsTouched=false;
     const wds=new Set([wdIdx(v.date)]);
     const g=id=>sheet.querySelector('#'+id);
     const dates=()=>{
@@ -1092,12 +1122,31 @@ function openLessonForm(opt){
     const preview=()=>{
       if(l||!fixed)return;
       const ds=dates();
-      g('f-preview').textContent=ds.length?`将排 ${ds.length} 节：${mdTxt(ds[0])} 起，每${wdsTxt([...wds].sort())}，到 ${ds[ds.length-1]} 为止。之后可以在学员详情里续排或提前结束。`:'没有符合的日期，请检查星期和结束时间。';
+      g('f-preview').textContent=ds.length?`将排 ${ds.length} 次课：${mdTxt(ds[0])} 起，每${wdsTxt([...wds].sort())}，到 ${ds[ds.length-1]} 为止。之后可以在学员详情里续排或提前结束。`:'没有符合的日期，请检查星期和结束时间。';
     };
-    const recalc=()=>{
+    // 改了学员或时间：重新折算节数和课费；改了节数：重新算课费；直接改课费：以你填的为准
+    let curUnits=lu(v);   // 精确节数（输入框里只显示 2 位小数）
+    const units=()=>curUnits;
+    // 节数没手动改过时按时长精确算课费（2 小时 ÷ 1.5 小时 × ¥150 = ¥200，而不是 1.33 × 150）
+    const expected=(c,s,e)=>!byUnit(c)?calcFee(c,s,e):Math.abs(units()-calcUnits(c,s,e))<1e-6?calcFee(c,s,e):r2(units()*(+c.rate||0));
+    const calcLine=()=>{
+      const c=client(g('f-client').value),el=g('f-calc');if(!c){el.textContent='';return;}
+      const s=g('f-start').value,e=g('f-end').value,h=Math.max(0,(toMin(e)-toMin(s))/60),fee=parseFloat(g('f-fee').value)||0;
+      g('f-units-w').hidden=!byUnit(c);
+      let t,warn=false;
+      if(!byUnit(c))t=`${hrsTxt(h)} 小时 × ${money(c.rate)}/小时 = ${money(calcFee(c,s,e))}`;
+      else if(unitMin(c)){const raw=h*60/unitMin(c),cu=calcUnits(c,s,e);t=`${hrsTxt(h)} 小时 ÷ 每节 ${nTxt(unitMin(c)/60)} 小时 = ${nTxt(raw)} 节${nTxt(raw)!==nTxt(cu)?`，按“${PARTIAL[c.partial]}”记 ${nTxt(cu)} 节`:''}；${nTxt(units())} 节 × ${money(c.rate)} = ${money(expected(c,s,e))}`;}
+      else{t=`「${c.name}」还没填“一节课多长”，现在每次课按 1 节算。去学员资料里填上，以后排课就会按时长自动折算。`;warn=true;}
+      if(Math.abs(fee-expected(c,s,e))>0.005)t+=`（课费按你填的 ${money(fee)} 记）`;
+      el.textContent=t;el.classList.toggle('warn',warn);
+    };
+    const recalc=from=>{
       const c=client(g('f-client').value);
-      if(!feeTouched)g('f-fee').value=calcFee(c,g('f-start').value,g('f-end').value);
-      checkWarn();
+      if(c){
+        if(from!=='units'){curUnits=calcUnits(c,g('f-start').value,g('f-end').value);g('f-units').value=nTxt(curUnits);}
+        g('f-fee').value=from==='units'&&byUnit(c)?r2(units()*(+c.rate||0)):calcFee(c,g('f-start').value,g('f-end').value);
+      }
+      calcLine();checkWarn();
     };
     const checkWarn=()=>{
       preview();
@@ -1107,7 +1156,7 @@ function openLessonForm(opt){
       else if(s&&e&&status!=='cancelled'){
         const ignore=new Set(l?(scope==='after'?later.map(x=>x.id):[l.id]):[]);let hit=[];
         dates().forEach(dt=>{hit=hit.concat(conflicts(dt,s,e,ignore));});
-        if(hit.length)msgs.push('时间冲突：'+hit.slice(0,3).map(x=>`${mdTxt(x.date)} ${x.start}–${x.end} ${cName(x.clientId)}`).join('；')+(hit.length>3?` 等 ${hit.length} 节`:''));
+        if(hit.length)msgs.push('时间冲突：'+hit.slice(0,3).map(x=>`${mdTxt(x.date)} ${x.start}–${x.end} ${cName(x.clientId)}`).join('；')+(hit.length>3?` 等 ${hit.length} 次`:''));
       }
       w.hidden=!msgs.length;w.textContent=msgs.join('。');
     };
@@ -1115,7 +1164,7 @@ function openLessonForm(opt){
       const c=client(g('f-client').value);if(!c)return;
       if(!l){g('f-end').value=fromMin(Math.min(toMin(g('f-start').value)+(+c.dur||90),23*60+55));if(c.venue)g('f-venue').value=c.venue;}
       if(!costTouched)g('f-cost').value=+c.cost||0;
-      feeTouched=false;recalc();
+      recalc();
     });
     let prevStart=g('f-start').value;
     g('f-start').addEventListener('change',()=>{const ns=g('f-start').value;if(ns&&prevStart){const d=toMin(g('f-end').value)-toMin(prevStart);if(d>0)g('f-end').value=fromMin(Math.min(toMin(ns)+d,23*60+55));}prevStart=ns;recalc();});
@@ -1124,9 +1173,9 @@ function openLessonForm(opt){
       if(!l&&!wdsTouched&&g('f-date').value){wds.clear();wds.add(wdIdx(g('f-date').value));g('f-wds').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',wds.has(+b.dataset.w)));}
       checkWarn();
     });
-    g('f-fee').addEventListener('input',()=>feeTouched=true);
+    g('f-fee').addEventListener('input',calcLine);g('f-units').addEventListener('input',()=>{curUnits=parseFloat(g('f-units').value)||0;recalc('units');});
     g('f-cost').addEventListener('input',()=>costTouched=true);
-    sheet.querySelectorAll('[data-dur]').forEach(b=>b.addEventListener('click',()=>{const s=toMin(g('f-start').value||'19:00');g('f-end').value=fromMin(Math.min(s+(+b.dataset.dur),23*60+55));if(!l)feeTouched=false;recalc();}));
+    sheet.querySelectorAll('[data-dur]').forEach(b=>b.addEventListener('click',()=>{const s=toMin(g('f-start').value||'19:00');g('f-end').value=fromMin(Math.min(s+(+b.dataset.dur),23*60+55));recalc();}));
     segBind(g('f-status'),'s',x=>{status=x;checkWarn();});
     segBind(g('f-scope'),'sc',x=>{scope=x;checkWarn();});
     segBind(g('f-kind'),'k',x=>{fixed=x==='fixed';g('f-fixed').hidden=!fixed;checkWarn();});
@@ -1135,33 +1184,34 @@ function openLessonForm(opt){
       const i=+b.dataset.w;if(wds.has(i)){if(wds.size>1)wds.delete(i);}else wds.add(i);wdsTouched=true;
       g('f-wds').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',wds.has(+x.dataset.w)));checkWarn();}));
     ['f-weeks','f-until'].forEach(id=>{if(g(id)){g(id).addEventListener('input',checkWarn);g(id).addEventListener('change',checkWarn);}});
-    checkWarn();
+    calcLine();checkWarn();
     g('f-save').addEventListener('click',()=>{
       const clientId=g('f-client').value,date=g('f-date').value,start=g('f-start').value,end=g('f-end').value;
       if(!clientId||!date||!start||!end){toast('请填好学员、日期和时间');return;}
       if(toMin(end)<=toMin(start)){toast('结束时间要晚于开始时间');return;}
       const fee=r2(parseFloat(g('f-fee').value)||0),cost=r2(parseFloat(g('f-cost').value)||0);
+      const un=byUnit(client(clientId))?units():1;
       const venue=g('f-venue').value.trim(),note=g('f-note').value.trim();
       ui.lastClient=clientId;
       const ops=[];
       if(!l){
         const ds=dates();if(!ds.length){toast('没有符合的日期，请检查星期和结束时间');return;}
         const sid=fixed?uid():null,now=new Date().toISOString();
-        ds.forEach((dt,i)=>{const o={id:uid()+i,clientId,date:dt,start,end,venue,fee,cost,status,note,created:now};if(sid)o.seriesId=sid;ops.push(['put','lessons',o]);});
-        toast(fixed?`已排好固定课 ${ds.length} 节`:'已排课');
+        ds.forEach((dt,i)=>{const o={id:uid()+i,clientId,date:dt,start,end,venue,units:un,fee,cost,status,note,created:now};if(sid)o.seriesId=sid;ops.push(['put','lessons',o]);});
+        toast(fixed?`已排好固定课 ${ds.length} 次`:'已排课');
       }else{
         const delta=Math.round((parseYmd(date)-parseYmd(l.date))/864e5);
-        ops.push(['put','lessons',Object.assign({},l,{clientId,date,start,end,venue,fee,cost,status,note})]);
-        if(scope==='after')later.filter(x=>x.id!==l.id).forEach(x=>ops.push(['put','lessons',Object.assign({},x,{clientId,start,end,venue,fee,cost,date:ymd(addDays(parseYmd(x.date),delta))})]));
-        toast(scope==='after'?`已更新 ${later.length} 节课`:'已保存');
+        ops.push(['put','lessons',Object.assign({},l,{clientId,date,start,end,venue,units:un,fee,cost,status,note})]);
+        if(scope==='after')later.filter(x=>x.id!==l.id).forEach(x=>ops.push(['put','lessons',Object.assign({},x,{clientId,start,end,venue,units:un,fee,cost,date:ymd(addDays(parseYmd(x.date),delta))})]));
+        toast(scope==='after'?`已更新 ${later.length} 次课`:'已保存');
       }
       commit(ops);closeSheet();
     });
     if(g('f-del'))g('f-del').addEventListener('click',e=>{
       const n=scope==='after'?later.length:1;
-      armDelete(e.currentTarget,n>1?`确认删除 ${n} 节`:'确认删除',()=>{
+      armDelete(e.currentTarget,n>1?`确认删除 ${n} 次课`:'确认删除',()=>{
         const ids=scope==='after'?later.map(x=>x.id):[l.id];
-        commit(ids.map(i=>['del','lessons',i]));closeSheet();toast(`已删除 ${ids.length} 节课`);
+        commit(ids.map(i=>['del','lessons',i]));closeSheet();toast(`已删除 ${ids.length} 次课`);
       });
     });
   });
@@ -1173,10 +1223,14 @@ function openClientForm(id){
   openSheet(`${sheetHead(c?'编辑资料':'添加学员 / 机构')}
     <div class="field"><span class="lbl">类型</span><div class="seg" role="group" id="c-type"><button type="button" data-t="student" aria-pressed="${v.type!=='org'}">私教学员</button><button type="button" data-t="org" aria-pressed="${v.type==='org'}">机构</button></div></div>
     <div class="field"><label for="c-name">名称</label><input id="c-name" value="${esc(v.name)}" placeholder="学员姓名，或机构名称"></div>
-    <div class="row2"><div class="field"><label for="c-rate">课费（元）</label><input id="c-rate" inputmode="decimal" value="${v.rate}" placeholder="例如 200"></div>
+    <div class="row2"><div class="field"><label for="c-rate" id="c-rate-l">${v.rateUnit==='hour'?'课费（元/小时）':'课费（元/节）'}</label><input id="c-rate" inputmode="decimal" value="${v.rate}" placeholder="例如 150"></div>
       <div class="field"><span class="lbl">计费方式</span><div class="seg" role="group" id="c-unit"><button type="button" data-u="lesson" aria-pressed="${v.rateUnit!=='hour'}">按节</button><button type="button" data-u="hour" aria-pressed="${v.rateUnit==='hour'}">按小时</button></div></div></div>
-    <div class="row2"><div class="field"><label for="c-dur">默认时长（分钟）</label><input id="c-dur" inputmode="numeric" value="${v.dur||90}"></div>
-      <div class="field"><label for="c-cost">每节场地费（元）</label><input id="c-cost" inputmode="decimal" value="${v.cost||0}"></div></div>
+    <div class="fixedbox" id="c-unitbox" ${v.rateUnit==='hour'?'hidden':''}>
+      <div class="row2"><div class="field"><label for="c-unitmin">一节课多长（分钟）</label><input id="c-unitmin" inputmode="numeric" value="${v.unitMin||''}" placeholder="例如 90"></div>
+        <div class="field"><label for="c-partial">不足一节时</label><select id="c-partial">${Object.entries(PARTIAL).map(([k,t])=>`<option value="${k}" ${(v.partial||'exact')===k?'selected':''}>${t}</option>`).join('')}</select></div></div>
+      <div class="hint" id="c-example"></div></div>
+    <div class="row2"><div class="field"><label for="c-dur">默认每次排多久（分钟）</label><input id="c-dur" inputmode="numeric" value="${v.dur||90}"></div>
+      <div class="field"><label for="c-cost">每次场地费（元）</label><input id="c-cost" inputmode="decimal" value="${v.cost||0}"></div></div>
     <div class="field"><label for="c-venue">常用场地</label><input id="c-venue" list="c-venues" value="${esc(v.venue||'')}" placeholder="排课时自动带出"><datalist id="c-venues">${venues().map(x=>`<option value="${esc(x)}">`).join('')}</datalist></div>
     <div class="field"><label for="c-phone">联系方式</label><input id="c-phone" value="${esc(v.phone||'')}" placeholder="电话、微信或联系人（可不填）"></div>
     <div class="field"><span class="lbl">课表颜色</span><div class="sw" id="c-color">${[0,1,2,3,4,5,6,7].map(i=>`<button type="button" class="c${i}" data-c="${i}" aria-label="颜色 ${i+1}" aria-pressed="${(v.color||0)%8===i}"></button>`).join('')}</div></div>
@@ -1186,10 +1240,21 @@ function openClientForm(id){
     <div class="actions">${c?'<button class="btn danger" id="c-del" data-orig="删除">删除</button>':''}<span class="sp"></span><button class="btn" data-act="close">取消</button><button class="btn primary" id="c-save">保存</button></div>`,
   sheet=>{
     const g=x=>sheet.querySelector('#'+x);let type=v.type||'student',unit=v.rateUnit||'lesson',color=(v.color||0)%8;
-    segBind(g('c-type'),'t',x=>type=x);segBind(g('c-unit'),'u',x=>unit=x);segBind(g('c-color'),'c',x=>color=+x);
+    const example=()=>{
+      const um=parseInt(g('c-unitmin').value)||0,rate=parseFloat(g('c-rate').value)||0,d=parseInt(g('c-dur').value)||90;
+      const t={rateUnit:'lesson',unitMin:um,partial:g('c-partial').value,rate};
+      const odd=Math.round(um*4/3);
+      g('c-example').textContent=um?`排一次 ${d} 分钟 = ${nTxt(calcUnits(t,'00:00',fromMin(d)))} 节 = ${money(calcFee(t,'00:00',fromMin(d)))}；排 ${odd} 分钟 = ${nTxt(calcUnits(t,'00:00',fromMin(odd)))} 节 = ${money(calcFee(t,'00:00',fromMin(odd)))}。排课时会按实际时长自动算。`
+        :'填了“一节课多长”，排课时就会按上课时长自动拆成几节、算好金额。';
+    };
+    segBind(g('c-type'),'t',x=>type=x);segBind(g('c-color'),'c',x=>color=+x);
+    segBind(g('c-unit'),'u',x=>{unit=x;g('c-unitbox').hidden=x==='hour';g('c-rate-l').textContent=x==='hour'?'课费（元/小时）':'课费（元/节）';});
+    ['c-unitmin','c-rate','c-dur'].forEach(id=>g(id).addEventListener('input',example));g('c-partial').addEventListener('change',example);example();
     g('c-save').addEventListener('click',()=>{
       const name=g('c-name').value.trim();if(!name){toast('请填写名称');g('c-name').focus();return;}
-      const o=Object.assign({},c||{id:uid(),created:new Date().toISOString()},{name,type,rate:r2(parseFloat(g('c-rate').value)||0),rateUnit:unit,dur:parseInt(g('c-dur').value)||90,
+      const um=parseInt(g('c-unitmin').value)||0;
+      if(unit!=='hour'&&!um){toast('按节收费的话，请填一节课多长');g('c-unitmin').focus();return;}
+      const o=Object.assign({},c||{id:uid(),created:new Date().toISOString()},{name,type,rate:r2(parseFloat(g('c-rate').value)||0),rateUnit:unit,unitMin:unit==='hour'?0:um,partial:g('c-partial').value||'exact',dur:parseInt(g('c-dur').value)||90,
         cost:r2(parseFloat(g('c-cost').value)||0),venue:g('c-venue').value.trim(),phone:g('c-phone').value.trim(),note:g('c-note').value.trim(),color,archived:c?g('c-arc').checked:false});
       const old=!c&&g('c-old').checked;
       put('clients',o);closeSheet();toast(c?'已保存':'已添加 '+name);
@@ -1210,11 +1275,12 @@ function openHistoryForm(opt){
   const h=opt.id?S.history.get(opt.id):null;
   const c=client(h?h.clientId:opt.client);if(!c)return;
   const per=c.rateUnit==='hour'?(+c.rate||0)*((+c.dur||90)/60):(+c.rate||0);
+  const perMin=unitMin(c)||(+c.dur||90);   // 补录的“一节”按多少分钟算课时
   const v=h?Object.assign({},h):{ym:addMonths(ymOf(new Date()),-1),count:'',hours:'',fee:'',paid:'',note:''};
   openSheet(`${sheetHead(h?'编辑补录':'补录以往上课情况')}
     <div class="infobox">给 <b>${esc(c.name)}</b> 补录用这个工具之前上过的课，按月填一条汇总就行，不用一节一节录。补录的节数、课酬、已收都会算进累计、余额和统计里。</div>
     <div class="row2"><div class="field"><label for="h-ym">哪个月</label><input type="month" id="h-ym" value="${v.ym}" placeholder="2025-09"></div>
-      <div class="field"><label for="h-count">上了几节</label><input id="h-count" inputmode="numeric" value="${v.count}" placeholder="例如 8"></div></div>
+      <div class="field"><label for="h-count">上了几节</label><input id="h-count" inputmode="decimal" value="${v.count}" placeholder="例如 8"></div></div>
     <div class="row2"><div class="field"><label for="h-hours">一共多少小时</label><input id="h-hours" inputmode="decimal" value="${v.hours}"></div>
       <div class="field"><label for="h-fee">课酬合计（元）</label><input id="h-fee" inputmode="decimal" value="${v.fee}"></div></div>
     <div class="field"><label for="h-paid">那时已经收到的钱（元）</label><input id="h-paid" inputmode="decimal" value="${v.paid}"><span class="hint">全部结清就和课酬合计一样；还欠着的部分会算进“欠费”。</span></div>
@@ -1224,14 +1290,14 @@ function openHistoryForm(opt){
     const g=x=>sheet.querySelector('#'+x);const touched={};
     ['h-hours','h-fee','h-paid'].forEach(id=>g(id).addEventListener('input',()=>touched[id]=true));
     g('h-count').addEventListener('input',()=>{
-      const n=parseInt(g('h-count').value)||0;
-      if(!touched['h-hours'])g('h-hours').value=n?hrsTxt(n*(+c.dur||90)/60):'';
+      const n=parseFloat(g('h-count').value)||0;
+      if(!touched['h-hours'])g('h-hours').value=n?hrsTxt(n*perMin/60):'';
       if(!touched['h-fee'])g('h-fee').value=n?r2(n*per):'';
       if(!touched['h-paid'])g('h-paid').value=g('h-fee').value;
     });
     g('h-fee').addEventListener('input',()=>{if(!touched['h-paid'])g('h-paid').value=g('h-fee').value;});
     const save=more=>{
-      const ym=g('h-ym').value.trim(),count=parseInt(g('h-count').value)||0;
+      const ym=g('h-ym').value.trim(),count=r2(parseFloat(g('h-count').value)||0);
       if(!/^\d{4}-\d{2}$/.test(ym)){toast('月份请写成 2025-09 这样');return;}
       if(!count&&!(parseFloat(g('h-fee').value)>0)){toast('请填上了几节，或者课酬合计');return;}
       const o=Object.assign({},h||{id:uid(),created:new Date().toISOString()},{clientId:c.id,ym,count,hours:r2(parseFloat(g('h-hours').value)||0),
@@ -1249,7 +1315,7 @@ function openHistoryForm(opt){
 function clientMonths(s){
   const m={};
   const row=k=>m[k]=m[k]||{ym:k,n:0,h:0,fee:0,paid:0,his:false,up:0};
-  s.ls.forEach(l=>{const r=row(l.date.slice(0,7));if(charged(l)){r.n++;r.h+=dur(l);r.fee+=+l.fee||0;}else if(lstate(l)==='upcoming')r.up++;});
+  s.ls.forEach(l=>{const r=row(l.date.slice(0,7));if(charged(l)){r.n+=lu(l);r.h+=dur(l);r.fee+=+l.fee||0;}else if(lstate(l)==='upcoming')r.up++;});
   s.ps.forEach(p=>{row(p.date.slice(0,7)).paid+=+p.amount||0;});
   s.hs.forEach(h=>{const r=row(h.ym);r.n+=+h.count||0;r.h+=+h.hours||0;r.fee+=+h.fee||0;r.paid+=+h.paid||0;r.his=true;});
   return Object.values(m).filter(r=>r.n||r.paid||r.up).sort((a,b)=>b.ym.localeCompare(a.ym));
@@ -1266,27 +1332,27 @@ function openClientDetail(id,showAll){
   const ps=s.ps.slice().sort((a,b)=>b.date.localeCompare(a.date));
   const months=clientMonths(s);
   const ser=seriesList(c.id);
-  const mini=l=>{const st=lstate(l);return `<button class="row" data-act="editLesson" data-id="${l.id}"><span class="tm num">${mdTxt(l.date)} 周${wdOf(l.date)} ${l.start}</span><span class="mid"><span>${isFixed(l)?'固定':'单次'} · ${esc(l.venue||'')}${l.note?' · '+esc(l.note):''}</span></span><span class="chip ${STATE_CHIP[st]}">${STATE_LABEL[st]}</span><span class="amt">${st==='cancelled'?'—':money(l.fee)}</span></button>`;};
+  const mini=l=>{const st=lstate(l);return `<button class="row" data-act="editLesson" data-id="${l.id}"><span class="tm num">${mdTxt(l.date)} 周${wdOf(l.date)} ${l.start}</span><span class="mid"><span>${byUnit(c)?nTxt(lu(l))+' 节 · ':''}${isFixed(l)?'固定':'单次'} · ${esc(l.venue||'')}${l.note?' · '+esc(l.note):''}</span></span><span class="chip ${STATE_CHIP[st]}">${STATE_LABEL[st]}</span><span class="amt">${st==='cancelled'?'—':money(l.fee)}</span></button>`;};
   openSheet(`<div class="sheet-h c${(c.color||0)%8}"><span class="ava">${esc(String(c.name).replace(/^示例·/,'').slice(0,1))}</span><h2>${esc(c.name)}</h2><button class="btn sm" data-act="editClient" data-id="${c.id}">编辑</button><button class="icon-btn" data-act="close" aria-label="关闭">${ICON.close}</button></div>
     <div class="hint">${c.type==='org'?'机构':'私教学员'} · ${rateTxt(c)}${c.venue?' · '+esc(c.venue):''}${c.phone?' · '+esc(c.phone):''}${s.firstYm?` · ${ymTxt(s.firstYm)}开始上课`:''}${c.archived?' · 已停用':''}${c.note?'<br>'+esc(c.note):''}</div>
-    <div class="stat-strip"><div><span>累计上课</span><b>${s.count} 节</b></div><div><span>累计课时</span><b>${hrsTxt(s.hrs)} 小时</b></div><div><span>累计课酬</span><b>${money(s.due)}</b></div>
+    <div class="stat-strip"><div><span>累计上课</span><b>${nTxt(s.count)} 节</b></div><div><span>累计课时</span><b>${hrsTxt(s.hrs)} 小时</b></div><div><span>累计课酬</span><b>${money(s.due)}</b></div>
       <div><span>${s.balance<0?(c.type==='org'?'待结算':'欠费'):'余额'}</span><b class="${s.balance<0?'neg':s.balance>0?'pos':''}">${money(Math.abs(s.balance))}</b></div></div>
     ${s.remain!=null?`<div class="hint">课时包剩余 <b class="num" style="font-size:16px;color:var(--fg)">${s.remain}</b> 节（从第一次买课时包起算）</div>`:''}
     <div class="inline"><button class="btn primary" data-act="newPay" data-client="${c.id}" ${s.balance<0?`data-amount="${-s.balance}"`:''}>记收款</button><button class="btn" data-act="newLessonFor" data-client="${c.id}">排课</button><button class="btn" data-act="newHistory" data-client="${c.id}">补录以往上课</button></div>
     ${ser.length?`<div class="section-t">固定课</div><div class="mini">${ser.map(x=>`<div class="row"><span class="mid"><b>${ICON.loop.replace('<svg','<svg width="13" height="13" style="vertical-align:-1px;margin-right:4px"')}每${esc(wdsTxt(x.wds))} ${x.last.start}–${x.last.end}</b><span>已上 ${x.done.length} · 待上 ${x.up.length} · ${x.up.length?'排到 '+x.last.date:'已于 '+x.last.date+' 结束'}${x.last.venue?' · '+esc(x.last.venue):''}</span></span>
       <span class="inline" style="flex-wrap:nowrap"><button class="btn sm" data-act="extendSeries" data-sid="${x.sid}">续排 8 周</button>${x.up.length?`<button class="btn sm danger" data-act="endSeries" data-sid="${x.sid}" data-orig="结束">结束</button>`:''}</span></div>`).join('')}</div>`:''}
     ${up.length?`<div class="section-t">接下来</div><div class="mini">${up.map(mini).join('')}</div>`:''}
-    <div class="section-t">按月历史</div>${months.length?`<div class="mini tbl-wrap"><table><thead><tr><th>月份</th><th class="n">节数</th><th class="n">小时</th><th class="n">课酬</th><th class="n">收款</th></tr></thead><tbody>${months.map(r=>`<tr><td>${ymTxt(r.ym)}${r.his?' <span class="chip">补录</span>':''}${r.up?` <span class="chip acc">待上 ${r.up}</span>`:''}</td><td class="n">${r.n}</td><td class="n">${hrsTxt(r.h)}</td><td class="n">${money(r.fee)}</td><td class="n">${r.paid?money(r.paid):'—'}</td></tr>`).join('')}
-      <tr class="tot"><td>合计</td><td class="n">${s.count}</td><td class="n">${hrsTxt(s.hrs)}</td><td class="n">${money(s.due)}</td><td class="n">${money(s.paid)}</td></tr></tbody></table></div>`:'<div class="hint">还没有上课记录。以前教过的，可以点“补录以往上课”。</div>'}
+    <div class="section-t">按月历史</div>${months.length?`<div class="mini tbl-wrap"><table><thead><tr><th>月份</th><th class="n">节数</th><th class="n">小时</th><th class="n">课酬</th><th class="n">收款</th></tr></thead><tbody>${months.map(r=>`<tr><td>${ymTxt(r.ym)}${r.his?' <span class="chip">补录</span>':''}${r.up?` <span class="chip acc">待上 ${r.up}</span>`:''}</td><td class="n">${nTxt(r.n)}</td><td class="n">${hrsTxt(r.h)}</td><td class="n">${money(r.fee)}</td><td class="n">${r.paid?money(r.paid):'—'}</td></tr>`).join('')}
+      <tr class="tot"><td>合计</td><td class="n">${nTxt(s.count)}</td><td class="n">${hrsTxt(s.hrs)}</td><td class="n">${money(s.due)}</td><td class="n">${money(s.paid)}</td></tr></tbody></table></div>`:'<div class="hint">还没有上课记录。以前教过的，可以点“补录以往上课”。</div>'}
     ${s.hs.length?`<div class="section-t">补录记录</div><div class="mini">${s.hs.slice().sort((a,b)=>b.ym.localeCompare(a.ym)).map(h=>`<button class="row" data-act="editHistory" data-id="${h.id}"><span class="tm num">${ymTxt(h.ym)}</span><span class="mid"><span>${h.count} 节 · ${hrsTxt(+h.hours||0)} 小时${h.note?' · '+esc(h.note):''}</span></span><span class="amt">${money(h.fee)}</span></button>`).join('')}</div>`:''}
-    <div class="section-t"><span>上过的课 ${pastAll.length} 节</span><span class="sp"></span>${pastAll.length>8&&!detailAll?`<button class="btn sm" data-act="detailAll" data-id="${c.id}">全部显示</button>`:''}</div>${past.length?`<div class="mini">${past.map(mini).join('')}</div>`:'<div class="hint">在这个工具里还没有上过课。</div>'}
+    <div class="section-t"><span>上过的课 ${pastAll.length} 次</span><span class="sp"></span>${pastAll.length>8&&!detailAll?`<button class="btn sm" data-act="detailAll" data-id="${c.id}">全部显示</button>`:''}</div>${past.length?`<div class="mini">${past.map(mini).join('')}</div>`:'<div class="hint">在这个工具里还没有上过课。</div>'}
     <div class="section-t">收款记录</div>${ps.length?`<div class="mini">${ps.map(p=>`<button class="row" data-act="editPay" data-id="${p.id}"><span class="tm num">${p.date}</span><span class="mid"><span>${esc(p.method||'')}${+p.lessons>0?` · 课时包 ${p.lessons} 节`:''}${p.note?' · '+esc(p.note):''}</span></span><span class="amt">${money(p.amount)}</span></button>`).join('')}</div>`:'<div class="hint">还没有收款记录。</div>'}`,
   sheet=>{
     sheet.querySelectorAll('[data-act=endSeries]').forEach(b=>{
       b.removeAttribute('data-act');
       b.addEventListener('click',e=>{
         const x=ser.find(z=>z.sid===b.dataset.sid);if(!x)return;
-        armDelete(e.currentTarget,`删掉待上的 ${x.up.length} 节`,()=>{commit(x.up.map(l=>['del','lessons',l.id]));toast(`固定课已结束，删掉了 ${x.up.length} 节待上的课`);openClientDetail(c.id);});
+        armDelete(e.currentTarget,`删掉待上的 ${x.up.length} 次课`,()=>{commit(x.up.map(l=>['del','lessons',l.id]));toast(`固定课已结束，删掉了 ${x.up.length} 次待上的课`);openClientDetail(c.id);});
       });
     });
   });
@@ -1306,7 +1372,7 @@ function extendSeries(sid,weeks){
       ops.push(['put','lessons',o]);
     }
   });
-  commit(ops);toast(`已续排 ${ops.length} 节`);
+  commit(ops);toast(`已续排 ${ops.length} 次课`);
 }
 
 function openPayForm(opt){
@@ -1357,7 +1423,7 @@ function buildIcs(prefs){
     L.push('BEGIN:VEVENT','UID:'+l.id+'@yuqiu-kebiao','DTSTAMP:'+icsUtc(now),'DTSTART:'+icsUtc(st),'DTEND:'+icsUtc(en),
       icsFold('SUMMARY:'+icsEsc(`羽毛球课 · ${c.name||''}`)));
     if(l.venue)L.push(icsFold('LOCATION:'+icsEsc(l.venue)));
-    L.push(icsFold('DESCRIPTION:'+icsEsc(`${isFixed(l)?'固定课':'单次课'} · ${l.start}–${l.end} · 课费 ${money(l.fee)}${l.note?'\n'+l.note:''}`)));
+    L.push(icsFold('DESCRIPTION:'+icsEsc(`${isFixed(l)?'固定课':'单次课'} · ${l.start}–${l.end}${byUnit(c)?' · '+nTxt(lu(l))+' 节':''} · 课费 ${money(l.fee)}${l.note?'\n'+l.note:''}`)));
     if(before>0)L.push('BEGIN:VALARM','ACTION:DISPLAY',icsFold('DESCRIPTION:'+icsEsc(`明天 ${l.start} 有课：${c.name||''}${l.venue?' @ '+l.venue:''}`)),`TRIGGER:-PT${before}M`,'END:VALARM');
     if(prefs.hourBefore)L.push('BEGIN:VALARM','ACTION:DISPLAY',icsFold('DESCRIPTION:'+icsEsc(`1 小时后上课：${c.name||''}`)),'TRIGGER:-PT60M','END:VALARM');
     L.push('END:VEVENT');
@@ -1381,11 +1447,11 @@ function openRemind(){
       <li><b>安卓</b>：在弹出的菜单里选系统自带的日历；如果是直接下载了，就到下载列表里点开这个 .ics 文件，用日历导入。</li>
       <li>建议在日历里新建一个“羽球课”日历专门放这些课。课表有改动时重新导出一次；如果出现重复的课，删掉这个日历重新导入就行。</li>
     </ol>
-    <div class="hint">${tmN?`明天有 ${tmN} 节课。`:'明天没有课。'}每次打开课表，首页也会显示今天和明天的课。</div>`,
+    <div class="hint">${tmN?`明天有 ${tmN} 次课。`:'明天没有课。'}每次打开课表，首页也会显示今天和明天的课。</div>`,
   sheet=>{
     const g=x=>sheet.querySelector('#'+x);
     const prefs=()=>({time:g('r-time').value||'20:00',weeks:+g('r-weeks').value||8,hourBefore:g('r-hour').checked});
-    const upd=()=>{const pr=prefs();lsSet(REMIND_KEY,JSON.stringify(pr));g('r-count').textContent=`将导出 ${buildIcs(pr).n} 节待上的课（已取消的不导出）。`;};
+    const upd=()=>{const pr=prefs();lsSet(REMIND_KEY,JSON.stringify(pr));g('r-count').textContent=`将导出 ${buildIcs(pr).n} 次待上的课（已取消的不导出）。`;};
     ['r-time','r-weeks','r-hour'].forEach(id=>g(id).addEventListener('change',upd));upd();
     g('r-go').addEventListener('click',()=>{
       const r=buildIcs(prefs());
@@ -1439,9 +1505,9 @@ const csvCell=x=>{x=String(x==null?'':x);return /[",\n]/.test(x)?'"'+x.replace(/
 const csv=rows=>'\ufeff'+rows.map(r=>r.map(csvCell).join(',')).join('\n');
 function exportJson(){const d={app:'羽球课表',version:2,exportedAt:new Date().toISOString()};KINDS.forEach(k=>d[k]=[...S[k].values()]);saveFile(`羽球课表备份-${ymd(new Date())}.json`,JSON.stringify(d,null,1),'application/json');}
 function exportLessons(){
-  const rows=[['日期','星期','开始','结束','时长(小时)','学员/机构','类型','课程','场地','状态','课费','成本','备注']];
-  lessons().sort(byTime).forEach(l=>{const c=client(l.clientId)||{};rows.push([l.date,'周'+wdOf(l.date),l.start,l.end,hrsTxt(dur(l)),c.name||'',c.type==='org'?'机构':'私教',isFixed(l)?'固定课':'单次课',l.venue||'',STATE_LABEL[lstate(l)],lstate(l)==='cancelled'?0:l.fee,l.cost||0,l.note||'']);});
-  histories().sort((a,b)=>a.ym.localeCompare(b.ym)).forEach(h=>{const c=client(h.clientId)||{};rows.push([h.ym,'','','',hrsTxt(+h.hours||0),c.name||'',c.type==='org'?'机构':'私教','补录 '+h.count+' 节','','补录',h.fee,0,h.note||'']);});
+  const rows=[['日期','星期','开始','结束','时长(小时)','节数','学员/机构','类型','课程','场地','状态','课费','成本','备注']];
+  lessons().sort(byTime).forEach(l=>{const c=client(l.clientId)||{};rows.push([l.date,'周'+wdOf(l.date),l.start,l.end,hrsTxt(dur(l)),nTxt(lu(l)),c.name||'',c.type==='org'?'机构':'私教',isFixed(l)?'固定课':'单次课',l.venue||'',STATE_LABEL[lstate(l)],lstate(l)==='cancelled'?0:l.fee,l.cost||0,l.note||'']);});
+  histories().sort((a,b)=>a.ym.localeCompare(b.ym)).forEach(h=>{const c=client(h.clientId)||{};rows.push([h.ym,'','','',hrsTxt(+h.hours||0),nTxt(h.count),c.name||'',c.type==='org'?'机构':'私教','补录','','补录',h.fee,0,h.note||'']);});
   saveFile(`课程明细-${ymd(new Date())}.csv`,csv(rows),'text/csv');
 }
 function exportPays(){
@@ -1467,12 +1533,12 @@ $('#import-file').addEventListener('change',e=>{
 function loadDemo(){
   const now=new Date(),ws=weekStart(now),ops=[],D=true;
   const C=[
-    {name:'示例·小雨（少儿）',type:'student',rate:180,rateUnit:'lesson',dur:60,venue:'奥体中心 3号场',cost:40,color:1,note:'8岁，刚学两个月'},
+    {name:'示例·小雨（少儿）',type:'student',rate:180,rateUnit:'lesson',unitMin:60,dur:60,venue:'奥体中心 3号场',cost:40,color:1,note:'8岁，刚学两个月'},
     {name:'示例·陈先生（成人提高）',type:'student',rate:240,rateUnit:'hour',dur:90,venue:'星河羽毛球馆 7号场',cost:60,color:3,note:'练后场杀球和步法'},
-    {name:'示例·周家姐弟（双人课）',type:'student',rate:300,rateUnit:'lesson',dur:90,venue:'奥体中心 3号场',cost:40,color:4},
+    {name:'示例·周家姐弟（双人课）',type:'student',rate:300,rateUnit:'lesson',unitMin:90,dur:90,venue:'奥体中心 3号场',cost:40,color:4},
     {name:'示例·飞羽俱乐部',type:'org',rate:150,rateUnit:'hour',dur:120,venue:'飞羽俱乐部',cost:0,color:0,note:'每月5号前结算上月课时'},
-    {name:'示例·阳光少儿体育',type:'org',rate:200,rateUnit:'lesson',dur:120,venue:'阳光体育馆',cost:0,color:5,note:'周六上午少儿班'},
-    {name:'示例·刘同学（已结课）',type:'student',rate:200,rateUnit:'lesson',dur:90,venue:'星河羽毛球馆 2号场',cost:50,color:6,note:'备考体育中考，已考完',archived:true},
+    {name:'示例·阳光少儿体育',type:'org',rate:200,rateUnit:'lesson',unitMin:60,dur:120,venue:'阳光体育馆',cost:0,color:5,note:'周六上午少儿班，一次 2 小时按 2 节结算'},
+    {name:'示例·刘同学（已结课）',type:'student',rate:200,rateUnit:'lesson',unitMin:90,dur:90,venue:'星河羽毛球馆 2号场',cost:50,color:6,note:'备考体育中考，已考完',archived:true},
   ].map(c=>Object.assign({id:uid()+Math.random().toString(36).slice(2,5),demo:D,phone:'',created:now.toISOString()},c));
   C.forEach(c=>ops.push(['put','clients',c]));
   const plan=[[0,2,'17:30'],[0,5,'15:00'],[1,0,'19:30'],[2,6,'10:00'],[3,1,'19:00'],[3,3,'19:00'],[4,5,'09:00']];
@@ -1483,13 +1549,13 @@ function loadDemo(){
     if((w===-4&&pi===3)||(w===-7&&pi===2))status='cancelled';
     if(w===-2&&pi===0)status='absent';
     const notes=['正手高远球','步法：米字步','反手过渡','网前搓球','发球和接发','双打站位','杀球发力'];
-    const o={id:uid()+w+'_'+pi,demo:D,clientId:c.id,date,start:st,end,venue:c.venue,fee:calcFee(c,st,end),cost:c.cost,status,note:c.type==='student'?notes[(w+9+pi)%7]:''};
+    const o={id:uid()+w+'_'+pi,demo:D,clientId:c.id,date,start:st,end,venue:c.venue,units:calcUnits(c,st,end),fee:calcFee(c,st,end),cost:c.cost,status,note:c.type==='student'?notes[(w+9+pi)%7]:''};
     if(pi!==3)o.seriesId='demo-'+pi;   // 周家姐弟是每次单独约的单次课
     L.push(o);
   });
   // 两节临时加的单次课
   L.push({id:uid()+'x1',demo:D,clientId:C[1].id,date:ymd(addDays(ws,4)),start:'12:30',end:'14:00',venue:C[1].venue,fee:360,cost:60,status:'normal',note:'临时加课：比赛前热身'});
-  L.push({id:uid()+'x2',demo:D,clientId:C[0].id,date:ymd(addDays(ws,-10)),start:'10:00',end:'11:00',venue:C[0].venue,fee:180,cost:40,status:'normal',note:'补课'});
+  L.push({id:uid()+'x2',demo:D,clientId:C[0].id,date:ymd(addDays(ws,-10)),start:'10:00',end:'11:00',venue:C[0].venue,units:1,fee:180,cost:40,status:'normal',note:'补课'});
   L.forEach(l=>ops.push(['put','lessons',l]));
   const P=[],first=ymd(addDays(ws,-63)),td=ymd(now);
   const pay=(ci,date,amount,method,lessonsN,note)=>{if(date<=td)P.push({id:uid()+P.length,demo:D,clientId:C[ci].id,date,amount,method,lessons:lessonsN||0,note:note||'',created:now.toISOString()});};
