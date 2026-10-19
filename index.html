@@ -1,0 +1,1604 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0B2D63">
+<title>羽球课表</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="羽球课表">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
+<style>
+/* Layout: deep-blue sticky band on top, week timetable as the main surface (campus-timetable style), bottom tab bar on phones, sheets for every form.
+   Palette: racket-brand green + deep court blue, lime as the small highlight. */
+:root{
+  --bg:#F1F4F8; --surface:#FFFFFF; --surface-2:#E5EBF2; --fg:#0D1F3C; --muted:#55647B; --line:#D1DAE5; --line-soft:#E4EAF1;
+  --accent:#00843D; --accent-fg:#FFFFFF; --navy:#0A3D8F; --navy-fg:#FFFFFF;
+  --band:#0B2D63; --band-fg:#FFFFFF; --band-muted:rgba(255,255,255,.68); --band-hover:rgba(255,255,255,.1); --hi:#D4DE1E;
+  --good:#11804A; --warn:#B06A00; --bad:#C62E2E; --scrim:rgba(6,14,30,.48);
+  --c0:#1F5FBF; --c1:#D2453B; --c2:#12935A; --c3:#7B4FC9; --c4:#D9822B; --c5:#0F94A3; --c6:#C23F86; --c7:#7A8A12;
+  --font-body:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  --font-num:"DIN Alternate","Bahnschrift","Roboto Condensed","Arial Narrow","PingFang SC",system-ui,sans-serif;
+  --r:14px; --nav-h:62px; --top-h:58px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#09121F; --surface:#101C2F; --surface-2:#17253C; --fg:#E2E9F3; --muted:#93A3B9; --line:#25354E; --line-soft:#19283F;
+  --accent:#2DBE6C; --accent-fg:#03200E; --navy:#79A6F2; --navy-fg:#061A3B;
+  --band:#071631; --band-fg:#E9EFF8; --band-muted:rgba(233,239,248,.62); --band-hover:rgba(255,255,255,.08); --hi:#DCE53D;
+  --good:#47C584; --warn:#E5A845; --bad:#F06A62; --scrim:rgba(0,0,0,.62);
+  --c0:#6F9EF0; --c1:#F07A6C; --c2:#4CCB8E; --c3:#A88BF0; --c4:#F0A85C; --c5:#4CC6D3; --c6:#EE7DB9; --c7:#B9C750;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#09121F; --surface:#101C2F; --surface-2:#17253C; --fg:#E2E9F3; --muted:#93A3B9; --line:#25354E; --line-soft:#19283F;
+  --accent:#2DBE6C; --accent-fg:#03200E; --navy:#79A6F2; --navy-fg:#061A3B;
+  --band:#071631; --band-fg:#E9EFF8; --band-muted:rgba(233,239,248,.62); --band-hover:rgba(255,255,255,.08); --hi:#DCE53D;
+  --good:#47C584; --warn:#E5A845; --bad:#F06A62; --scrim:rgba(0,0,0,.62);
+  --c0:#6F9EF0; --c1:#F07A6C; --c2:#4CCB8E; --c3:#A88BF0; --c4:#F0A85C; --c5:#4CC6D3; --c6:#EE7DB9; --c7:#B9C750;
+  color-scheme:dark}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+/* 手机上不缩放：关掉双击放大、横竖屏切换时的字号放大 */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulation}
+html{background:var(--band);color:var(--fg)}
+body{background:var(--bg);color:var(--fg);min-height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
+/* 手机全屏打开时，状态栏后面保持深蓝色，不让滚动的内容露出来 */
+body::before{content:"";position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--band);z-index:25}
+body{margin:0;font-family:var(--font-body);font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.num{font-family:var(--font-num);font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.muted{color:var(--muted)}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.25}
+h2{font-size:20px}
+h3{font-size:15px}
+
+/* top band */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--band);color:var(--band-fg)}
+.top-in{max-width:1180px;margin:0 auto;height:var(--top-h);display:flex;align-items:center;gap:14px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:17px;white-space:nowrap;letter-spacing:.02em}
+.brand svg{width:26px;height:26px;color:var(--hi)}
+.tabs{display:none;gap:2px;margin-left:14px;align-self:stretch}
+.tabs button{padding:0 16px;color:var(--band-muted);font-weight:600;border-radius:0}
+.tabs button:hover{color:var(--band-fg);background:var(--band-hover)}
+.tabs button[aria-current="page"]{color:var(--band-fg);box-shadow:inset 0 -3px 0 var(--hi)}
+.top .sp{flex:1}
+.sync{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--band-muted);white-space:nowrap;border-radius:999px;padding:4px 8px}
+.sync:hover{background:var(--band-hover)}
+.sync i{width:7px;height:7px;border-radius:50%;background:var(--band-muted)}
+.sync.ok i{background:var(--hi)}
+.sync.off i{background:#F2A93B}
+.sync.err i{background:#FF6B6B}
+.sync.busy i{background:var(--band-fg);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.sync.busy i{animation:none}}
+@media (max-width:420px){.top .sync span{display:none}}
+.top .icon-btn{color:var(--band-fg)}
+.top .icon-btn:hover{background:var(--band-hover)}
+.icon-btn{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:var(--fg)}
+.icon-btn:hover{background:var(--surface-2)}
+.icon-btn svg{width:20px;height:20px}
+
+.app{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom,0px))}
+.bnav{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
+.bnav button{height:var(--nav-h);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11.5px;color:var(--muted);font-weight:600}
+.bnav svg{width:22px;height:22px}
+.bnav button[aria-current="page"]{color:var(--accent)}
+.fab{position:fixed;z-index:31;right:calc(max(16px,env(safe-area-inset-right,0px)) + 4px);bottom:calc(var(--nav-h) + 16px + env(safe-area-inset-bottom,0px));height:52px;padding:0 20px 0 16px;border-radius:999px;background:var(--accent);color:var(--accent-fg);display:flex;align-items:center;gap:6px;font-weight:700;box-shadow:0 6px 18px -6px color-mix(in oklab,var(--accent) 70%,transparent)}
+.fab svg{width:22px;height:22px}
+/* Netlify 免费版会在右下角固定放一个“Powered by Netlify”标签（大约占底部 50px），
+   出现时把导航栏、按钮和提示整体抬高，让标签待在导航栏下方的空白里 */
+body.nl-badge{--badge-h:52px}
+body.nl-badge .bnav{padding-bottom:max(var(--badge-h),env(safe-area-inset-bottom,0px))}
+body.nl-badge .fab{bottom:calc(var(--nav-h) + 16px + max(var(--badge-h),env(safe-area-inset-bottom,0px)))}
+body.nl-badge .app{padding-block-end:calc(var(--nav-h) + 96px + max(var(--badge-h),env(safe-area-inset-bottom,0px)))}
+body.nl-badge .toast{bottom:calc(var(--nav-h) + 84px + max(var(--badge-h),env(safe-area-inset-bottom,0px)))}
+body.nl-badge .sheet{padding-bottom:calc(20px + max(var(--badge-h),env(safe-area-inset-bottom,0px)))}
+@media (min-width:860px){
+  body.nl-badge .fab{bottom:calc(28px + var(--badge-h))}
+  body.nl-badge .app{padding-block-end:calc(120px + var(--badge-h))}
+  body.nl-badge .toast{bottom:calc(96px + var(--badge-h))}
+  .tabs{display:flex}
+  .bnav{display:none}
+  .app{padding-block:18px 120px}
+  .fab{bottom:calc(28px + env(safe-area-inset-bottom,0px))}
+}
+
+/* generic pieces */
+.view{display:flex;flex-direction:column;gap:16px}
+.bar-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.bar-row .sp{flex:1}
+.btn{height:38px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:color-mix(in oklab,var(--accent) 45%,var(--line))}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.navy{background:var(--navy);border-color:var(--navy);color:var(--navy-fg)}
+.btn.danger{color:var(--bad)}
+.btn.danger.armed{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+.btn.sm{height:32px;padding:0 10px;font-size:13.5px;border-radius:8px}
+.btn.block{width:100%;height:44px}
+.btn:disabled{opacity:.6;cursor:default}
+.btn svg{width:18px;height:18px}
+.seg{display:inline-flex;flex-wrap:wrap;background:var(--surface-2);border-radius:10px;padding:3px;gap:2px}
+.seg button{height:32px;padding:0 12px;border-radius:8px;font-size:13.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.seg.big{display:grid;grid-template-columns:1fr 1fr;width:100%}
+.seg.big button{height:auto;padding:9px 10px;display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-align:left;white-space:normal}
+.seg.big button small{font-weight:500;font-size:12px;color:var(--muted)}
+.seg.big button[aria-pressed="true"]{box-shadow:0 0 0 2px var(--accent)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.panel-h{display:flex;align-items:center;gap:10px;padding:14px 16px 6px;flex-wrap:wrap}
+.panel-h .sp{flex:1}
+.chip{display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:600;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.chip.good{background:color-mix(in oklab,var(--good) 15%,var(--surface));color:var(--good)}
+.chip.warn{background:color-mix(in oklab,var(--warn) 16%,var(--surface));color:var(--warn)}
+.chip.bad{background:color-mix(in oklab,var(--bad) 14%,var(--surface));color:var(--bad)}
+.chip.acc{background:color-mix(in oklab,var(--accent) 14%,var(--surface));color:var(--accent)}
+.chip.navy{background:color-mix(in oklab,var(--navy) 14%,var(--surface));color:var(--navy)}
+.chip svg{width:12px;height:12px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--cc);flex:none}
+.empty{padding:28px 20px;text-align:center;color:var(--muted)}
+.empty h3{color:var(--fg);margin-bottom:6px;font-size:17px}
+.empty .bar-row{justify-content:center;margin-top:14px}
+.banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-radius:12px;background:color-mix(in oklab,var(--hi) 22%,var(--surface));color:var(--fg);font-size:13.5px}
+.banner .sp{flex:1}
+.c0{--cc:var(--c0)}.c1{--cc:var(--c1)}.c2{--cc:var(--c2)}.c3{--cc:var(--c3)}.c4{--cc:var(--c4)}.c5{--cc:var(--c5)}.c6{--cc:var(--c6)}.c7{--cc:var(--c7)}
+
+/* upcoming card */
+.soon{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:0;overflow:hidden}
+.soon>div{padding:12px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.soon>div+div{border-left:1px solid var(--line-soft)}
+@media (max-width:600px){.soon>div+div{border-left:0;border-top:1px solid var(--line-soft)}}
+.soon-h{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px}
+.soon-h .sp{flex:1}
+.soon-h .num{font-size:15px;color:var(--muted);font-weight:600}
+.soon-i{display:flex;align-items:center;gap:10px;font-size:14px;text-align:left;width:100%;min-width:0}
+.soon-i .num{font-size:16px;width:46px;flex:none;font-weight:600}
+.soon-i span:last-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+.soon-i b{color:var(--fg)}
+.soon .none{color:var(--muted);font-size:13.5px}
+.soon .tmr .soon-h{color:var(--navy)}
+
+/* week header */
+.wk-nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.wk-title{display:flex;flex-direction:column;line-height:1.15;min-width:0;padding:0 4px}
+.wk-title b{font-family:var(--font-num);font-size:24px;font-weight:700;letter-spacing:.01em;white-space:nowrap}
+.wk-title small{font-size:12px;color:var(--muted)}
+.wk-nav .sp{flex:1}
+
+/* timetable */
+.tt{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:clip}
+.tt-row{display:grid;grid-template-columns:38px repeat(7,minmax(0,1fr))}
+.tt-days{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--top-h));z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.tt-day{display:flex;flex-direction:column;align-items:center;padding:8px 0 7px;gap:1px;font-size:12px;color:var(--muted);border-left:1px solid var(--line-soft)}
+.tt-day b{font-family:var(--font-num);font-size:19px;font-weight:600;color:var(--fg);line-height:1.1;min-width:28px;text-align:center;border-radius:8px;padding:1px 4px}
+.tt-day.today{color:var(--accent);font-weight:700}
+.tt-day.today b{background:var(--accent);color:var(--accent-fg)}
+.tt-day.tmr b{box-shadow:inset 0 0 0 1.5px var(--navy)}
+.tt-day.weekend{background:color-mix(in oklab,var(--surface-2) 45%,transparent)}
+.tt-axis{position:relative}
+.tt-axis span{position:absolute;right:6px;transform:translateY(-50%);font-family:var(--font-num);font-size:12.5px;color:var(--muted)}
+.tt-col{position:relative;border-left:1px solid var(--line-soft);cursor:cell;
+  background-image:repeating-linear-gradient(to bottom,transparent 0 calc(var(--h) - 1px),var(--line-soft) calc(var(--h) - 1px) var(--h))}
+.tt-col.weekend{background-color:color-mix(in oklab,var(--surface-2) 45%,transparent)}
+.tt-col.today{background-color:color-mix(in oklab,var(--accent) 6%,transparent)}
+.lz{position:absolute;margin:1px 2px;border-radius:8px;padding:4px 5px;font-size:12px;line-height:1.25;overflow:hidden;text-align:left;display:flex;flex-direction:column;gap:1px;
+  background:color-mix(in oklab,var(--cc) 19%,var(--surface));border:1px solid color-mix(in oklab,var(--cc) 42%,transparent);color:var(--fg);cursor:pointer}
+.lz:hover{background:color-mix(in oklab,var(--cc) 30%,var(--surface))}
+.lz b{font-weight:700;color:color-mix(in oklab,var(--cc) 62%,var(--fg));word-break:break-all;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.lz .t{font-family:var(--font-num);font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:2px}
+.lz .t svg{width:11px;height:11px;flex:none;color:color-mix(in oklab,var(--cc) 70%,var(--fg))}
+.lz .v{color:var(--muted);font-size:11px;word-break:break-all}
+.lz.single{border-style:dashed;border-width:1.5px}
+.lz.done{background:color-mix(in oklab,var(--cc) 10%,var(--surface))}
+.lz.done b{color:color-mix(in oklab,var(--cc) 45%,var(--muted))}
+.lz.cancelled{background:repeating-linear-gradient(135deg,var(--surface) 0 6px,var(--surface-2) 6px 12px);border-style:dashed;border-color:var(--line)}
+.lz.cancelled b{color:var(--muted);text-decoration:line-through}
+.lz .flag{position:absolute;right:4px;top:4px;width:14px;height:14px;color:var(--good)}
+.lz.absent .flag{color:var(--warn)}
+.now{position:absolute;left:-1px;right:0;height:2px;background:var(--navy);z-index:3;pointer-events:none}
+.now::before{content:"";position:absolute;left:-4px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--hi);box-shadow:0 0 0 2px var(--navy)}
+@media (max-width:560px){.lz .v{display:none}.lz{padding:3px 3px}.lz .t{font-size:11.5px}.tt-row{grid-template-columns:32px repeat(7,minmax(0,1fr))}.tt-axis span{font-size:11.5px;right:4px}}
+.wk-sum{display:flex;flex-wrap:wrap;gap:8px 20px;padding:12px 16px;font-size:13.5px;color:var(--muted);border-top:1px solid var(--line-soft)}
+.wk-sum b{font-family:var(--font-num);font-size:18px;color:var(--fg);font-weight:600;margin-right:3px}
+.legend-k{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legend-k i{display:inline-block;width:18px;height:12px;border-radius:4px;margin-right:5px;vertical-align:-1px;border:1.5px solid var(--muted);background:var(--surface-2)}
+.legend-k i.d{border-style:dashed}
+
+/* list mode */
+.day-group{padding:6px 0}
+.day-h{display:flex;align-items:baseline;gap:8px;padding:10px 16px 4px;font-weight:700}
+.day-h .num{font-size:18px}
+.day-h.today{color:var(--accent)}
+.row{display:flex;align-items:center;gap:12px;padding:10px 16px;text-align:left;width:100%;border-top:1px solid var(--line-soft)}
+button.row:hover{background:color-mix(in oklab,var(--surface-2) 50%,transparent)}
+.row .tm{font-family:var(--font-num);font-size:16px;width:92px;flex:none;font-variant-numeric:tabular-nums}
+.row .mid{flex:1;min-width:0}
+.row .mid b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .mid span{font-size:12.5px;color:var(--muted)}
+.row .amt{font-family:var(--font-num);font-size:16px;font-weight:600;text-align:right;white-space:nowrap}
+.row .stripe{width:4px;align-self:stretch;border-radius:2px;background:var(--cc);flex:none}
+
+/* clients */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;text-align:left;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card:hover{border-color:color-mix(in oklab,var(--cc) 50%,var(--line))}
+.card-h{display:flex;align-items:center;gap:10px;min-width:0}
+.ava{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-weight:700;flex:none;background:color-mix(in oklab,var(--cc) 22%,var(--surface));color:color-mix(in oklab,var(--cc) 70%,var(--fg))}
+.card-h .nm{flex:1;min-width:0}
+.card-h .nm b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-h .nm span{font-size:12.5px;color:var(--muted)}
+.kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.kv div{display:flex;flex-direction:column;min-width:0}
+.kv span{font-size:11.5px;color:var(--muted);letter-spacing:.04em}
+.kv b{font-family:var(--font-num);font-size:19px;font-weight:600;white-space:nowrap}
+.kv b small{font-size:13px;font-family:var(--font-body);font-weight:500}
+.pos{color:var(--good)}.neg{color:var(--bad)}
+.card .next{font-size:12.5px;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+
+/* tiles */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 16px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tile span{font-size:12px;color:var(--muted);letter-spacing:.04em}
+.tile b{font-family:var(--font-num);font-size:28px;font-weight:700;line-height:1.15;white-space:nowrap}
+.tile b small{font-size:15px;font-family:var(--font-body);font-weight:500}
+.tile small{font-size:12px;color:var(--muted)}
+.tile.hl{background:var(--band);border-color:var(--band);color:var(--band-fg)}
+.tile.hl span,.tile.hl small{color:var(--band-muted)}
+.tile .delta{font-weight:600}
+.tile .delta.up{color:var(--good)}.tile .delta.down{color:var(--bad)}
+.tile.hl .delta.up{color:var(--hi)}.tile.hl .delta.down{color:#FFB4A8}
+
+/* chart */
+.chart{padding:8px 12px 12px}
+.bars{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px;align-items:end}
+.bar{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;border-radius:8px;padding:4px 0}
+.bar:hover{background:var(--surface-2)}
+.bar .bv{font-family:var(--font-num);font-size:12px;color:var(--muted);height:16px;white-space:nowrap}
+.bar .stack{width:min(70%,30px);height:150px;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;border-bottom:1px solid var(--line)}
+.bar .stack i{display:block;border-radius:4px 4px 2px 2px;min-height:0}
+.b-pri{background:var(--accent)}
+.b-org{background:var(--navy)}
+.b-his{background:repeating-linear-gradient(135deg,var(--muted) 0 3px,transparent 3px 6px);border:1px solid var(--muted)}
+.bar.sel{background:var(--surface-2)}
+.bar.sel .bv,.bar.sel .bl{color:var(--fg);font-weight:700}
+.bar .bl{font-size:12px;color:var(--muted)}
+.bar .bl em{font-style:normal}
+.legend{display:flex;gap:14px;font-size:12.5px;color:var(--muted);padding:0 16px;flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+@media (max-width:560px){.bar:not(.sel) .bv{visibility:hidden}.bars{gap:2px}.bar .bl{font-size:11px}.bar .bl em{display:none}.tiles.t3 .tile:first-child{grid-column:1/-1}}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-size:12px;font-weight:600;color:var(--muted);text-align:left;padding:8px 16px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 16px;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+td.n,th.n{text-align:right;font-family:var(--font-num);font-variant-numeric:tabular-nums;font-size:15px}
+th.n{font-family:var(--font-body);font-size:12px}
+tr:last-child td{border-bottom:0}
+tr.tot td{font-weight:700;border-top:1px solid var(--line)}
+tr.click{cursor:pointer}
+tr.click:hover td{background:color-mix(in oklab,var(--surface-2) 50%,transparent)}
+td .inline{flex-wrap:nowrap}
+.share{display:block;height:6px;border-radius:3px;background:var(--surface-2);min-width:60px}
+.share i{display:block;height:100%;border-radius:3px;background:var(--cc)}
+.wd{display:grid;grid-template-columns:28px 1fr 64px;gap:6px 10px;align-items:center;padding:6px 16px 14px;font-size:13px}
+.wd .track{height:10px;border-radius:5px;background:var(--surface-2);overflow:hidden}
+.wd .track i{display:block;height:100%;background:var(--navy);border-radius:5px}
+.wd .num{text-align:right;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px}
+@media (max-width:860px){.grid2{grid-template-columns:minmax(0,1fr)}}
+
+/* sheet */
+.sheet-wrap{position:fixed;inset:0;z-index:60;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:600px;max-height:92%;overflow:auto;border-radius:20px 20px 0 0;
+  padding:18px max(18px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));
+  display:flex;flex-direction:column;gap:14px;animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}}
+@media (min-width:860px){.sheet-wrap{align-items:center}.sheet{border-radius:20px;max-height:88%}}
+.sheet-h{display:flex;align-items:center;gap:10px}
+.sheet-h h2{flex:1;min-width:0}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field>label,.lbl{font-size:12.5px;font-weight:600;color:var(--muted);letter-spacing:.03em}
+.field input,.field select,.field textarea,.inp{font-size:16px;height:42px;border-radius:10px;border:1px solid var(--line);background:var(--bg);padding:0 12px;width:100%;min-width:0}
+.field textarea{height:auto;min-height:64px;padding:10px 12px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus,.inp:focus{outline:2px solid color-mix(in oklab,var(--accent) 60%,transparent);outline-offset:0;border-color:var(--accent)}
+.inp.sm{height:36px;width:76px;padding:0 8px}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.row3{display:grid;grid-template-columns:minmax(0,1.3fr) repeat(2,minmax(0,1fr));gap:10px}
+/* 手机上日期单独一行，开始/结束并排，免得日期和时间被截断 */
+@media (max-width:520px){.row3{grid-template-columns:repeat(2,minmax(0,1fr))}.row3>.field:first-child{grid-column:1/-1}}
+.inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hint{font-size:12.5px;color:var(--muted)}
+.warnbox{padding:9px 12px;border-radius:10px;background:color-mix(in oklab,var(--warn) 14%,var(--surface));color:var(--warn);font-size:13.5px}
+.infobox{padding:9px 12px;border-radius:10px;background:color-mix(in oklab,var(--navy) 10%,var(--surface));color:var(--navy);font-size:13.5px}
+.errbox{padding:9px 12px;border-radius:10px;background:color-mix(in oklab,var(--bad) 12%,var(--surface));color:var(--bad);font-size:13.5px}
+.okbox{padding:9px 12px;border-radius:10px;background:color-mix(in oklab,var(--good) 13%,var(--surface));color:var(--good);font-size:13.5px}
+.fixedbox{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:12px;border:1px solid color-mix(in oklab,var(--accent) 35%,var(--line));background:color-mix(in oklab,var(--accent) 5%,var(--surface))}
+.wdpick{display:grid;grid-template-columns:repeat(7,minmax(0,44px));gap:5px}
+.wdpick button{width:100%;height:36px;border-radius:9px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:14px}
+.wdpick button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.actions{display:flex;gap:10px;align-items:center;padding-top:4px}
+.actions .sp{flex:1}
+.sw{display:flex;gap:8px;flex-wrap:wrap}
+.sw button{width:30px;height:30px;border-radius:50%;background:var(--cc);box-shadow:inset 0 0 0 2px var(--surface)}
+.sw button[aria-pressed="true"]{outline:2px solid var(--cc);outline-offset:2px}
+.check{display:flex;align-items:center;gap:8px;font-size:14px}
+.check input{width:18px;height:18px;accent-color:var(--accent);flex:none}
+.stat-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;background:var(--bg);border-radius:12px;padding:10px 12px}
+.stat-strip div{display:flex;flex-direction:column;min-width:0}
+.stat-strip span{font-size:11.5px;color:var(--muted)}
+.stat-strip b{font-family:var(--font-num);font-size:18px;font-weight:600;white-space:nowrap}
+@media (max-width:420px){.stat-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.mini{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.mini .row{border-top:1px solid var(--line-soft);padding:9px 12px}
+.mini .row:first-child{border-top:0}
+.mini .row .tm{width:auto;font-size:14.5px;min-width:96px}
+.mini table td,.mini table th{padding:8px 12px}
+.section-t{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.06em;margin-top:4px}
+.section-t .sp{flex:1}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) + 84px + env(safe-area-inset-bottom,0px));z-index:80;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;max-width:calc(100% - 32px);box-shadow:0 8px 24px -8px rgba(0,0,0,.4)}
+@media (min-width:860px){.toast{bottom:96px}}
+.loading{padding:60px 0;text-align:center;color:var(--muted)}
+.auth{min-height:calc(100vh - 160px);display:grid;place-items:center;padding-block:24px}
+.auth-card{width:100%;max-width:420px;padding:24px 22px;display:flex;flex-direction:column;gap:16px}
+.auth-brand{display:flex;align-items:center;gap:10px;font-size:22px;font-weight:700}
+.auth-brand svg{width:34px;height:34px;color:var(--accent)}
+ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4l5 15M16 3v16M23 4l-5 15M6 8c3 1 7 1.5 10 1.5S23 9 26 8"/><path d="M8 5.5L13 19h6l5-13.5"/><circle cx="16" cy="24" r="5" fill="currentColor" stroke="none"/></svg>
+      <span>羽球课表</span>
+    </div>
+    <nav class="tabs" id="tabs" aria-label="主导航" hidden></nav>
+    <div class="sp"></div>
+    <button class="sync" id="sync" data-act="settings" hidden><i></i><span>连接中</span></button>
+    <button class="icon-btn" id="set-btn" data-act="settings" aria-label="账号与数据" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </div>
+</header>
+<div class="app">
+  <main id="view" class="view"><div class="loading">正在打开课表…</div></main>
+</div>
+<nav class="bnav" id="bnav" aria-label="主导航" hidden></nav>
+<button class="fab" id="fab" data-act="fab" hidden></button>
+<div id="sheet-root"></div>
+<div id="toast-root"></div>
+<input type="file" id="import-file" accept=".json,application/json" hidden>
+
+<script>
+(function(){
+'use strict';
+/* ---------- utils ---------- */
+const $=(s,el=document)=>el.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const pad=n=>String(n).padStart(2,'0');
+const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const ymOf=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+const parseYmd=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);};
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x;};
+const addMonths=(ym,n)=>{const[y,m]=ym.split('-').map(Number);return ymOf(new Date(y,m-1+n,1));};
+const weekStart=d=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());return addDays(x,-((x.getDay()+6)%7));};
+const toMin=t=>{const[h,m]=String(t||'0:0').split(':').map(Number);return h*60+(m||0);};
+const fromMin=m=>`${pad(Math.floor(m/60))}:${pad(m%60)}`;
+const sum=(a,f)=>a.reduce((s,x)=>s+(Number(f(x))||0),0);
+const r2=n=>Math.round(n*100)/100;
+const money=n=>{n=r2(n||0);return (n<0?'-':'')+'¥'+Math.abs(n).toLocaleString('zh-CN',{maximumFractionDigits:2});};
+const short=n=>{n=Math.round(n||0);return n>=10000?(n/10000).toFixed(1).replace(/\.0$/,'')+'万':String(n);};
+const hrsTxt=h=>(Math.round(h*10)/10).toString();
+const WD=['一','二','三','四','五','六','日'];
+const wdIdx=s=>(parseYmd(s).getDay()+6)%7;
+const wdOf=s=>WD[wdIdx(s)];
+const wdsTxt=w=>w.map(i=>'周'+WD[i]).join('、');
+const mdTxt=s=>{const d=parseYmd(s);return `${d.getMonth()+1}/${d.getDate()}`;};
+const ymTxt=ym=>`${+ym.slice(0,4)}年${+ym.slice(5,7)}月`;
+const isoWeek=d=>{const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const day=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-day);const y0=new Date(Date.UTC(t.getUTCFullYear(),0,1));return Math.ceil(((t-y0)/864e5+1)/7);};
+const METHODS=['微信','支付宝','现金','银行转账','机构结算'];
+const STATE_LABEL={done:'已上',upcoming:'待上',absent:'缺席计费',cancelled:'已取消'};
+const STATE_CHIP={done:'good',upcoming:'acc',absent:'warn',cancelled:''};
+const ICON={
+  week:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M8 13.5h3M8 17h3M14 13.5h2"/></svg>',
+  clients:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.8a3.4 3.4 0 0 1 0 6.4M18.5 14.8c1.7.7 2.7 2.4 3 5.2"/></svg>',
+  pay:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg>',
+  stats:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  left:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  right:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>',
+  close:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  alert:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 6v7M12 17.5v.5"/></svg>',
+  loop:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2.5l3 3-3 3"/><path d="M4 11v-1a4.5 4.5 0 0 1 4.5-4.5H20M7 21.5l-3-3 3-3"/><path d="M20 13v1a4.5 4.5 0 0 1-4.5 4.5H4"/></svg>',
+  bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9"/><path d="M10 20a2.2 2.2 0 0 0 4 0"/></svg>'
+};
+const VIEWS=[['week','课表'],['clients','学员'],['pay','收费'],['stats','统计']];
+
+/* ---------- cloud config ---------- */
+// 在这里填 Supabase 项目的 Project URL 和 anon（或 publishable）key。
+// 填好之后把这个文件发给朋友，对方打开就能直接注册使用，不用再配置。
+const CONFIG={url:'https://vvnwgjfpxqlifnpwnyhf.supabase.co',key:'sb_publishable_jBXBPsi53p7AyWeEUkA9Xg_XjVyIJF0'};
+const CFG_KEY='yuqiu-config-v1',SESS_KEY='yuqiu-session-v1',LEGACY_KEY='yuqiu-kebiao-data-v1',LEGACY_NO='yuqiu-legacy-dismissed',REMIND_KEY='yuqiu-remind-v1';
+const lsGet=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
+const lsSet=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v);return true;}catch(e){return false;}};
+function loadCfg(){
+  if(CONFIG.url&&CONFIG.key)return {url:CONFIG.url.trim().replace(/\/+$/,''),key:CONFIG.key.trim(),baked:true};
+  try{const c=JSON.parse(lsGet(CFG_KEY)||'null');if(c&&c.url&&c.key)return {url:c.url,key:c.key,baked:false};}catch(e){}
+  return null;
+}
+let CFG=loadCfg();
+
+/* ---------- store ---------- */
+// history = 补录的以往上课情况（按月汇总），用于还没用这个工具之前就在教的学生
+const S={clients:new Map(),lessons:new Map(),payments:new Map(),history:new Map()};
+const KINDS=Object.keys(S);
+const store={mode:'init',pulled:false,sync:'idle',syncMsg:'',lastPull:0};
+let session=null,outbox=new Map(),seq=0;
+const clean=o=>JSON.parse(JSON.stringify(o));
+const total=()=>KINDS.reduce((s,k)=>s+S[k].size,0);
+const cacheKey=()=>'yuqiu-cache-'+session.user.id, outKey=()=>'yuqiu-outbox-'+session.user.id;
+const splitKey=key=>{const i=key.indexOf('|');return [key.slice(0,i),key.slice(i+1)];};
+function saveCache(){if(!session)return;const d={};KINDS.forEach(k=>d[k]=[...S[k].values()]);lsSet(cacheKey(),JSON.stringify(d));}
+function saveOutbox(){if(session)lsSet(outKey(),JSON.stringify([...outbox.keys()]));}
+function loadCache(){
+  KINDS.forEach(k=>S[k]=new Map());outbox=new Map();
+  try{const d=JSON.parse(lsGet(cacheKey())||'null');if(d)KINDS.forEach(k=>(d[k]||[]).forEach(o=>S[k].set(o.id,o)));}catch(e){}
+  try{JSON.parse(lsGet(outKey())||'[]').forEach(x=>outbox.set(x,++seq));}catch(e){}
+}
+
+/* ---------- supabase (plain REST, no SDK) ---------- */
+class ApiError extends Error{constructor(status,body,net){super('');this.status=status;this.body=body||{};this.net=!!net;}}
+async function http(method,url,o){
+  o=o||{};
+  const h=Object.assign({apikey:CFG.key},o.headers||{});
+  if(o.body!==undefined)h['Content-Type']='application/json';
+  if(o.auth)h.Authorization='Bearer '+o.auth;
+  let r;
+  try{r=await fetch(url,{method,headers:h,body:o.body===undefined?undefined:JSON.stringify(o.body)});}
+  catch(e){throw new ApiError(0,null,true);}
+  const txt=await r.text();let j=null;try{j=txt?JSON.parse(txt):null;}catch(e){}
+  if(!r.ok)throw new ApiError(r.status,j);
+  return j;
+}
+const authPost=(path,body,tok)=>http('POST',CFG.url+'/auth/v1/'+path,{body,auth:tok});
+function setSession(j){
+  session={access_token:j.access_token,refresh_token:j.refresh_token,
+    expires_at:j.expires_at||Math.floor(Date.now()/1000)+(j.expires_in||3600),
+    user:{id:j.user.id,email:j.user.email}};
+  lsSet(SESS_KEY,JSON.stringify(session));
+}
+let refreshing=null;
+function refresh(){
+  if(!refreshing)refreshing=(async()=>{
+    try{setSession(await authPost('token?grant_type=refresh_token',{refresh_token:session.refresh_token}));}
+    catch(e){if(!e.net){expire();e.expired=true;}throw e;}
+    finally{refreshing=null;}
+  })();
+  return refreshing;
+}
+async function token(){
+  if(session.expires_at*1000-Date.now()<60000){
+    try{await refresh();}catch(e){if(e.expired)throw e;}
+  }
+  return session.access_token;
+}
+async function rest(method,path,o){
+  const t=await token();
+  try{return await http(method,CFG.url+'/rest/v1/'+path,Object.assign({},o,{auth:t}));}
+  catch(e){
+    if(e.status===401&&!e.net){await refresh();return await http(method,CFG.url+'/rest/v1/'+path,Object.assign({},o,{auth:session.access_token}));}
+    throw e;
+  }
+}
+function apiMsg(e){
+  if(!e)return '出错了，请再试一次';
+  if(e.net)return '连不上云端，请检查网络后再试';
+  const b=e.body||{},code=b.error_code||b.code||'',m=String(b.msg||b.message||b.error_description||b.error||'');
+  const map={invalid_credentials:'邮箱或密码不对',user_already_exists:'这个邮箱已经注册过了，请直接登录',email_exists:'这个邮箱已经注册过了，请直接登录',
+    email_not_confirmed:'邮箱还没确认，请先去邮箱点确认链接',weak_password:'密码太简单了，至少 6 位',over_email_send_rate_limit:'发邮件太频繁了，请过一会儿再试',
+    over_request_rate_limit:'操作太频繁了，请过一会儿再试',signup_disabled:'云端关闭了注册，请联系管理员',email_address_invalid:'邮箱格式不对',validation_failed:'邮箱或密码格式不对',
+    PGRST205:'云端还没建好数据表，请按《云端配置步骤》运行那段 SQL',PGRST301:'登录已失效，请重新登录','42501':'云端拒绝了这次保存（权限设置不对），请检查 SQL 里的权限部分',
+    '23514':'云端数据表是旧版本，请按《云端配置步骤》第 2 步重新运行一次 SQL'};
+  if(map[code])return map[code];
+  if(/Invalid login/i.test(m))return map.invalid_credentials;
+  if(/already registered/i.test(m))return map.user_already_exists;
+  if(/Email not confirmed/i.test(m))return map.email_not_confirmed;
+  if(/Password should/i.test(m))return map.weak_password;
+  if(/Invalid API key|No API key|apikey/i.test(m))return '云端密钥不对，请检查配置';
+  if(/schema cache|does not exist/i.test(m))return map.PGRST205;
+  if(/check constraint/i.test(m))return map['23514'];
+  return m?'云端返回：'+m:`出错了（${e.status}），请再试一次`;
+}
+
+/* ---------- sync ---------- */
+function setSync(st,msg){
+  const changed=store.sync!==st||store.syncMsg!==(msg||'');
+  store.sync=st;store.syncMsg=msg||'';renderSync();
+  if(changed&&st==='err')toast(msg);
+}
+function handleSyncErr(e){
+  if(e&&e.expired)return;
+  if(e&&e.net){setSync('off');retryLater();return;}
+  setSync('err',apiMsg(e));retryLater();
+}
+let retryT=0,flushT=0,flushing=false;
+function retryLater(){clearTimeout(retryT);retryT=setTimeout(()=>{store.pulled?flush():pull();},20000);}
+function flushSoon(ms){clearTimeout(flushT);flushT=setTimeout(flush,ms==null?400:ms);}
+async function flush(){
+  if(!session||store.mode!=='app')return;
+  if(flushing)return;
+  if(!outbox.size){if(store.pulled)setSync('ok');return;}
+  flushing=true;setSync('busy');
+  const snap=[...outbox.entries()];
+  try{
+    const puts=[],dels={},now=new Date().toISOString();
+    snap.forEach(([key])=>{const [k,id]=splitKey(key);const o=S[k]&&S[k].get(id);
+      if(o)puts.push({user_id:session.user.id,kind:k,id,data:clean(o),updated_at:now});else (dels[k]=dels[k]||[]).push(id);});
+    for(let i=0;i<puts.length;i+=400)
+      await rest('POST','records?on_conflict=user_id,kind,id',{headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:puts.slice(i,i+400)});
+    for(const k of Object.keys(dels))for(let i=0;i<dels[k].length;i+=60){
+      const list=dels[k].slice(i,i+60).map(x=>'"'+String(x).replace(/["\\]/g,m=>'\\'+m)+'"').join(',');
+      await rest('DELETE',`records?kind=eq.${k}&id=in.(${encodeURIComponent(list)})`,{headers:{Prefer:'return=minimal'}});
+    }
+    snap.forEach(([key,s])=>{if(outbox.get(key)===s)outbox.delete(key);});
+    saveOutbox();flushing=false;
+    if(outbox.size)return flush();
+    setSync('ok');
+  }catch(e){flushing=false;handleSyncErr(e);}
+}
+async function pull(){
+  if(!session||store.mode!=='app')return;
+  setSync('busy');
+  try{
+    const rows=[];
+    for(let off=0;;off+=1000){
+      const page=await rest('GET',`records?select=kind,id,data&order=kind.asc,id.asc&limit=1000&offset=${off}`)||[];
+      rows.push(...page);if(page.length<1000)break;
+    }
+    if(store.mode!=='app')return;
+    const N={};KINDS.forEach(k=>N[k]=new Map());
+    rows.forEach(r=>{if(N[r.kind]&&r.data)N[r.kind].set(r.id,Object.assign({},r.data,{id:r.id}));});
+    outbox.forEach((_,key)=>{const [k,id]=splitKey(key);if(!N[k])return;const lo=S[k].get(id);lo?N[k].set(id,lo):N[k].delete(id);});
+    KINDS.forEach(k=>S[k]=N[k]);
+    store.pulled=true;store.lastPull=Date.now();saveCache();scheduleRender();
+    if(outbox.size)await flush();else setSync('ok');
+  }catch(e){handleSyncErr(e);if(!store.pulled)scheduleRender();}
+}
+function commit(ops){
+  ops.forEach(([op,k,o])=>{
+    if(op==='put'){S[k].set(o.id,o);outbox.set(k+'|'+o.id,++seq);}
+    else{S[k].delete(o);outbox.set(k+'|'+o,++seq);}
+  });
+  saveCache();saveOutbox();scheduleRender();flushSoon();
+}
+const put=(k,o)=>commit([['put',k,o]]);
+
+/* ---------- auth ---------- */
+function enterApp(){store.mode='app';store.pulled=false;store.sync='idle';loadCache();render();pull();}
+function expire(){
+  // 登录过期：保留本机缓存和未上传的修改，重新登录同一账号后会继续上传
+  session=null;lsSet(SESS_KEY,null);store.mode='auth';closeSheet();render();toast('登录已过期，请重新登录');
+}
+async function signOut(){
+  const t=session&&session.access_token;
+  if(t)authPost('logout',{},t).catch(()=>{});
+  if(session){lsSet(cacheKey(),null);lsSet(outKey(),null);}
+  session=null;lsSet(SESS_KEY,null);KINDS.forEach(k=>S[k]=new Map());outbox=new Map();
+  store.mode='auth';store.pulled=false;closeSheet();render();toast('已退出登录');
+}
+function legacy(){
+  if(lsGet(LEGACY_NO))return null;
+  try{const d=JSON.parse(lsGet(LEGACY_KEY)||'null');if(!d)return null;const n=KINDS.reduce((s,k)=>s+((d[k]||[]).length),0);return n?{d,n}:null;}catch(e){return null;}
+}
+
+/* ---------- domain ---------- */
+const clientsArr=(all)=>[...S.clients.values()].filter(c=>all||!c.archived).sort((a,b)=>((a.type==='org')-(b.type==='org'))||String(a.name).localeCompare(String(b.name),'zh'));
+const client=id=>S.clients.get(id);
+const cName=id=>(client(id)||{}).name||'已删除';
+const sName=id=>{const n=cName(id).replace(/^示例·/,'').replace(/（[^）]*）|\([^)]*\)/g,'').trim();return n||cName(id);};
+const cColor=id=>{const c=client(id);return c?(c.color||0)%8:7;};
+const lessonEndTs=l=>parseYmd(l.date).getTime()+toMin(l.end)*60000;
+const lstate=l=>l.status==='cancelled'?'cancelled':l.status==='absent'?'absent':(lessonEndTs(l)<=Date.now()?'done':'upcoming');
+const charged=l=>{const s=lstate(l);return s==='done'||s==='absent';};
+const dur=l=>Math.max(0,(toMin(l.end)-toMin(l.start))/60);
+const byTime=(a,b)=>(a.date+a.start).localeCompare(b.date+b.start);
+const lessons=()=>[...S.lessons.values()];
+const payments=()=>[...S.payments.values()];
+const histories=()=>[...S.history.values()];
+const isFixed=l=>!!l.seriesId;
+function calcFee(c,start,end){if(!c)return 0;const h=(toMin(end)-toMin(start))/60;return c.rateUnit==='hour'?r2((+c.rate||0)*h):(+c.rate||0);}
+function rateTxt(c){return c.rate?`${money(c.rate)}/${c.rateUnit==='hour'?'小时':'节'}`:'未设课费';}
+function summary(c){
+  const ls=lessons().filter(l=>l.clientId===c.id);
+  const ps=payments().filter(p=>p.clientId===c.id);
+  const hs=histories().filter(h=>h.clientId===c.id);
+  const ch=ls.filter(charged);
+  const hisN=sum(hs,h=>h.count),hisFee=sum(hs,h=>h.fee),hisPaid=sum(hs,h=>h.paid),hisH=sum(hs,h=>h.hours);
+  const due=sum(ch,l=>l.fee)+hisFee, paid=sum(ps,p=>p.amount)+hisPaid;
+  const pk=ps.filter(p=>+p.lessons>0);let remain=null;
+  if(pk.length){const first=pk.map(p=>p.date).sort()[0];remain=sum(pk,p=>p.lessons)-ch.filter(l=>l.date>=first).length;}
+  const up=ls.filter(l=>lstate(l)==='upcoming').sort(byTime);
+  const ym=ymOf(new Date());
+  const firstYm=[...ch.map(l=>l.date.slice(0,7)),...hs.map(h=>h.ym)].sort()[0]||null;
+  const lastDone=ch.slice().sort(byTime).pop();
+  return {ls,ps,hs,due,paid,balance:r2(paid-due),remain,next:up[0],upN:up.length,hrs:sum(ch,dur)+hisH,count:ch.length+hisN,hisN,
+    monthCount:ch.filter(l=>l.date.startsWith(ym)).length,firstYm,lastDone};
+}
+function conflicts(date,start,end,ignore){
+  const s=toMin(start),e=toMin(end);
+  return lessons().filter(l=>l.date===date&&l.status!=='cancelled'&&!ignore.has(l.id)&&toMin(l.start)<e&&toMin(l.end)>s);
+}
+function seriesList(clientId){
+  const g={};
+  lessons().forEach(l=>{if(l.seriesId&&(!clientId||l.clientId===clientId))(g[l.seriesId]=g[l.seriesId]||[]).push(l);});
+  return Object.entries(g).map(([sid,ls])=>{
+    ls.sort(byTime);
+    const wds=[...new Set(ls.map(l=>wdIdx(l.date)))].sort();
+    const last=ls[ls.length-1];
+    return {sid,ls,wds,first:ls[0],last,up:ls.filter(l=>lstate(l)==='upcoming'),done:ls.filter(charged),clientId:last.clientId};
+  }).sort((a,b)=>(b.up.length>0)-(a.up.length>0)||b.last.date.localeCompare(a.last.date));
+}
+// 按“YYYY”或“YYYY-MM”前缀汇总一段时间
+function periodData(prefix){
+  const ls=lessons().filter(l=>l.date.startsWith(prefix));
+  const ch=ls.filter(charged),up=ls.filter(l=>lstate(l)==='upcoming');
+  const hs=histories().filter(h=>String(h.ym||'').startsWith(prefix));
+  const isOrg=id=>(client(id)||{}).type==='org';
+  const hisFee=sum(hs,h=>h.fee);
+  return {ls,ch,up,hs,
+    lessonIncome:sum(ch,l=>l.fee),hisFee,income:sum(ch,l=>l.fee)+hisFee,cost:sum(ch,l=>l.cost),
+    hrs:sum(ch,dur)+sum(hs,h=>h.hours),count:ch.length+sum(hs,h=>h.count),
+    pri:sum(ch.filter(l=>!isOrg(l.clientId)),l=>l.fee)+sum(hs.filter(h=>!isOrg(h.clientId)),h=>h.fee),
+    org:sum(ch.filter(l=>isOrg(l.clientId)),l=>l.fee)+sum(hs.filter(h=>isOrg(h.clientId)),h=>h.fee),
+    upFee:sum(up,l=>l.fee),upN:up.length,cancel:ls.filter(l=>l.status==='cancelled').length,
+    received:sum(payments().filter(p=>p.date.startsWith(prefix)),p=>p.amount)+sum(hs,h=>h.paid)};
+}
+const hasDemo=()=>KINDS.some(k=>[...S[k].values()].some(o=>o.demo));
+
+/* ---------- ui state ---------- */
+const ui={view:'week',ws:weekStart(new Date()),mode:'grid',filter:'all',month:ymOf(new Date()),year:new Date().getFullYear(),statMode:'month',showArchived:false};
+try{const u=JSON.parse(lsGet(UKEY_())||'{}');if(VIEWS.some(v=>v[0]===u.view))ui.view=u.view;if(u.mode==='list'||u.mode==='grid')ui.mode=u.mode;if(u.statMode==='year'||u.statMode==='month')ui.statMode=u.statMode;}catch(e){}
+function UKEY_(){return 'yuqiu-kebiao-ui-v1';}
+function saveUi(){lsSet(UKEY_(),JSON.stringify({view:ui.view,mode:ui.mode,statMode:ui.statMode}));}
+function remindPrefs(){try{return Object.assign({time:'20:00',hourBefore:true,weeks:8},JSON.parse(lsGet(REMIND_KEY)||'{}'));}catch(e){return {time:'20:00',hourBefore:true,weeks:8};}}
+
+/* ---------- install to home screen ---------- */
+const isStandalone=()=>window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+const isIOS=()=>!/android/i.test(navigator.userAgent)&&(/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1));
+const isMobile=()=>window.matchMedia('(pointer:coarse)').matches;
+const inWeChat=()=>/MicroMessenger/i.test(navigator.userAgent);
+let installEvt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;scheduleRender();});
+function installBanner(){
+  if(isStandalone()||!isMobile()||lsGet('yuqiu-install-no')||location.protocol==='file:')return '';
+  const msg=inWeChat()?'微信里没法把课表放到桌面：点右上角「···」，选「在浏览器打开」，再添加到主屏幕。'
+    :isIOS()?'把课表放到手机桌面：在 Safari 里点底部的分享按钮（方框加向上的箭头），选「添加到主屏幕」。以后点桌面图标打开，就像一个 App。'
+    :installEvt?'可以把课表安装到手机桌面，以后像 App 一样打开。'
+    :'把课表放到手机桌面：点浏览器菜单（⋮ 或 ≡），选「添加到桌面」或「添加到主屏幕」。';
+  return `<div class="banner"><span>${msg}</span><span class="sp"></span>${installEvt?'<button class="btn sm primary" data-act="install">安装</button>':''}<button class="btn sm" data-act="installNo">知道了</button></div>`;
+}
+
+/* ---------- render ---------- */
+let raf=0;
+function scheduleRender(){if(raf||store.mode!=='app')return;const go=()=>{if(!raf)return;cancelAnimationFrame(raf.a);clearTimeout(raf.t);raf=0;if(store.mode==='app')render();};raf={a:requestAnimationFrame(go),t:setTimeout(go,120)};}
+function renderSync(){
+  const sy=$('#sync');if(!sy)return;
+  const pending=outbox.size;
+  const map={ok:['ok','已同步'],busy:['busy','同步中'],off:['off',pending?`离线 · ${pending} 条待上传`:'离线'],err:['err','同步出错'],idle:['busy','连接中']};
+  const [cls,txt]=map[store.sync]||map.idle;
+  sy.className='sync '+cls;sy.querySelector('span').textContent=txt;
+  sy.title=store.syncMsg||(store.sync==='ok'?'所有修改都已保存到云端':'');
+}
+function render(){
+  const app=store.mode==='app';
+  $('#bnav').hidden=!app;$('#tabs').hidden=!app;$('#sync').hidden=!app;$('#set-btn').hidden=!app;
+  const v=$('#view');
+  if(store.mode==='setup'){$('#fab').hidden=true;v.innerHTML=viewSetup();mountSetup();return;}
+  if(store.mode==='auth'){$('#fab').hidden=true;v.innerHTML=viewAuth();mountAuth();return;}
+  if(!app){$('#fab').hidden=true;return;}
+  $('#bnav').innerHTML=VIEWS.map(([k,t])=>`<button data-act="go" data-v="${k}" ${ui.view===k?'aria-current="page"':''}>${ICON[k]}<span>${t}</span></button>`).join('');
+  $('#tabs').innerHTML=VIEWS.map(([k,t])=>`<button data-act="go" data-v="${k}" ${ui.view===k?'aria-current="page"':''}>${t}</button>`).join('');
+  renderSync();
+  const ready=store.pulled||total()>0;
+  const fab=$('#fab');
+  const fabMap={week:'排课',clients:'新建学员',pay:'记收款',stats:''};
+  fab.hidden=!fabMap[ui.view]||!ready;
+  fab.innerHTML=ICON.plus+'<span>'+(fabMap[ui.view]||'')+'</span>';
+  if(!ready){
+    const bad=store.sync==='off'||store.sync==='err';
+    v.innerHTML=`<div class="loading">${bad?esc(store.syncMsg||'连不上云端，请检查网络')+'<div class="bar-row" style="justify-content:center;margin-top:14px"><button class="btn" data-act="syncNow">重试</button></div>':'正在从云端载入你的课表…'}</div>`;
+    return;
+  }
+  const html=({week:viewWeek,clients:viewClients,pay:viewPay,stats:viewStats})[ui.view]();
+  const lg=store.pulled?legacy():null;
+  v.innerHTML=installBanner()+(lg?`<div class="banner"><span>这台设备上还有 ${lg.n} 条之前没登录时记的数据，要不要存到你的账号里？</span><span class="sp"></span><button class="btn sm primary" data-act="legacyUp">存到账号</button><button class="btn sm" data-act="legacyNo">不用了</button></div>`:'')
+    +(hasDemo()?`<div class="banner"><span>现在显示的是示例数据，用来看看效果。名字带“示例·”的都是假的。</span><span class="sp"></span><button class="btn sm" data-act="clearDemo">清除示例数据</button></div>`:'')+html;
+}
+
+function emptyStart(){
+  return `<div class="panel empty"><h3>先把你的学员和机构加进来</h3>
+  <p>每个学员或机构可以设好课费、常用场地和时长，之后排课会自动带出来。以前就在教的学生，也可以补录之前上过多少课。<br>也可以先载入一套示例数据，看看课表、收费和统计长什么样。</p>
+  <div class="bar-row"><button class="btn primary" data-act="newClient">${ICON.plus}添加学员 / 机构</button><button class="btn" data-act="loadDemo">载入示例数据</button></div></div>`;
+}
+
+function soonCard(){
+  const now=new Date(),td=ymd(now),tm=ymd(addDays(now,1));
+  const live=l=>l.status!=='cancelled';
+  const today=lessons().filter(l=>l.date===td&&live(l)&&lessonEndTs(l)>Date.now()).sort(byTime);
+  const tmr=lessons().filter(l=>l.date===tm&&live(l)).sort(byTime);
+  const item=l=>`<button class="soon-i c${cColor(l.clientId)}" data-act="editLesson" data-id="${l.id}"><span class="dot"></span><span class="num">${l.start}</span><span><b>${esc(cName(l.clientId))}</b>${l.venue?' · '+esc(l.venue):''}</span></button>`;
+  const d=addDays(now,1);
+  return `<div class="panel soon">
+    <div><div class="soon-h"><span>今天还有</span><span class="sp"></span><span class="num">${today.length} 节</span></div>${today.length?today.map(item).join(''):'<div class="none">今天没有要上的课了</div>'}</div>
+    <div class="tmr"><div class="soon-h">${ICON.bell.replace('<svg','<svg width="16" height="16"')}<span>明天 · 周${WD[(d.getDay()+6)%7]} ${d.getMonth()+1}/${d.getDate()}</span><span class="sp"></span><span class="num">${tmr.length} 节</span></div>
+      ${tmr.length?tmr.map(item).join(''):'<div class="none">明天没有课</div>'}
+      <button class="btn sm" data-act="remind" style="align-self:flex-start;margin-top:2px">${ICON.bell}设置手机提醒</button></div>
+  </div>`;
+}
+
+function viewWeek(){
+  const ws=ui.ws,days=[...Array(7)].map((_,i)=>addDays(ws,i)),ds=days.map(ymd),today=ymd(new Date()),tmr=ymd(addDays(new Date(),1));
+  const ls=lessons().filter(l=>ds.includes(l.date));
+  const we=days[6];
+  const title=ws.getMonth()===we.getMonth()?`${ws.getMonth()+1}月${ws.getDate()}–${we.getDate()}日`:`${ws.getMonth()+1}月${ws.getDate()}日–${we.getMonth()+1}月${we.getDate()}日`;
+  const isThis=ymd(weekStart(new Date()))===ymd(ws);
+  const live=ls.filter(l=>l.status!=='cancelled');
+  const doneN=ls.filter(charged).length;
+  let out=(S.clients.size?soonCard():'')+`<div class="wk-nav">
+    <button class="icon-btn" data-act="wk" data-d="-7" aria-label="上一周">${ICON.left}</button>
+    <div class="wk-title"><b>${title}</b><small>${ws.getFullYear()}年 · 第${isoWeek(ws)}周${isThis?' · 本周':''}</small></div>
+    <button class="icon-btn" data-act="wk" data-d="7" aria-label="下一周">${ICON.right}</button>
+    ${isThis?'':'<button class="btn sm" data-act="wk" data-d="0">回到本周</button>'}
+    <span class="sp"></span>
+    <div class="seg" role="group" aria-label="显示方式"><button data-act="mode" data-m="grid" aria-pressed="${ui.mode==='grid'}">课表</button><button data-act="mode" data-m="list" aria-pressed="${ui.mode==='list'}">列表</button></div>
+  </div>`;
+  if(!S.clients.size)return out+emptyStart();
+  const fixedN=live.filter(isFixed).length;
+  const sumHtml=`<div class="wk-sum"><span><b>${live.length}</b>节课</span><span><b>${fixedN}</b>固定 · <b>${live.length-fixedN}</b>单次</span><span><b>${hrsTxt(sum(live,dur))}</b>小时</span><span><b>${short(sum(live,l=>l.fee))}</b>元课酬</span><span><b>${doneN}</b>节已上</span></div>`;
+  if(ui.mode==='list'){
+    let body='';
+    days.forEach((d,i)=>{
+      const dl=ls.filter(l=>l.date===ds[i]).sort(byTime);
+      body+=`<div class="day-group"><div class="day-h ${ds[i]===today?'today':''}"><span>周${WD[i]}</span><span class="num">${d.getMonth()+1}/${d.getDate()}</span>${ds[i]===today?'<span class="chip acc">今天</span>':ds[i]===tmr?'<span class="chip navy">明天</span>':''}</div>`;
+      body+=dl.length?dl.map(lessonRow).join(''):`<button class="row muted" data-act="slot" data-date="${ds[i]}" data-start="19:00"><span class="tm">—</span><span class="mid"><span>没有课，点这里排一节</span></span></button>`;
+      body+='</div>';
+    });
+    return out+`<div class="panel">${body}${sumHtml}</div>`;
+  }
+  let sH=8,eH=22;
+  ls.forEach(l=>{sH=Math.min(sH,Math.floor(toMin(l.start)/60));eH=Math.max(eH,Math.ceil(toMin(l.end)/60));});
+  const H=window.matchMedia('(min-width:860px)').matches?52:46, rows=eH-sH;
+  ui._sH=sH;ui._H=H;
+  let axis='';for(let h=sH;h<=eH;h++)axis+=`<span style="top:${(h-sH)*H}px;${h===sH?'transform:none;':''}${h===eH?'transform:translateY(-100%);':''}">${h}:00</span>`;
+  let cols='';
+  const nowD=new Date(),nowMin=nowD.getHours()*60+nowD.getMinutes();
+  days.forEach((d,i)=>{
+    const dl=ls.filter(l=>l.date===ds[i]).sort((a,b)=>toMin(a.start)-toMin(b.start)||toMin(b.end)-toMin(a.end));
+    const placed=[];let cluster=[],cEnd=-1;
+    const flush=()=>{const lanes=[];cluster.forEach(l=>{let k=lanes.findIndex(e=>e<=toMin(l.start));if(k<0){k=lanes.length;lanes.push(0);}lanes[k]=toMin(l.end);placed.push({l,k,cl:cluster});});cluster.lanes=lanes.length;cluster=[];};
+    dl.forEach(l=>{if(cluster.length&&toMin(l.start)>=cEnd)flush();cluster.push(l);cEnd=Math.max(cEnd,toMin(l.end));});
+    if(cluster.length)flush();
+    const blocks=placed.map(({l,k,cl})=>{
+      const n=cl.lanes||1,st=lstate(l),fx=isFixed(l);
+      const top=(toMin(l.start)-sH*60)/60*H,h=Math.max(22,dur(l)*H-2);
+      const flag=st==='done'?`<span class="flag">${ICON.check}</span>`:st==='absent'?`<span class="flag">${ICON.alert}</span>`:'';
+      return `<button class="lz c${cColor(l.clientId)} ${st} ${fx?'fixed':'single'}" data-act="editLesson" data-id="${l.id}" style="top:${top}px;height:${h}px;left:calc(${k}*100%/${n});width:calc(100%/${n} - 4px)" title="${esc(cName(l.clientId))} ${l.start}–${l.end} ${esc(l.venue||'')} · ${fx?'固定课':'单次课'} · ${STATE_LABEL[st]}">${flag}<b>${esc(sName(l.clientId))}</b><span class="t">${fx?ICON.loop:''}${l.start}</span>${h>60&&l.venue?`<span class="v">${esc(l.venue)}</span>`:''}</button>`;
+    }).join('');
+    const isT=ds[i]===today,wk=i>=5;
+    const now=isT&&nowMin>=sH*60&&nowMin<=eH*60?`<div class="now" style="top:${(nowMin-sH*60)/60*H}px"></div>`:'';
+    cols+=`<div class="tt-col ${isT?'today':''} ${wk?'weekend':''}" data-act="slot" data-date="${ds[i]}" aria-label="周${WD[i]}，点空白处排课">${blocks}${now}</div>`;
+  });
+  const head=days.map((d,i)=>`<div class="tt-day ${ds[i]===today?'today':''} ${ds[i]===tmr?'tmr':''} ${i>=5?'weekend':''}"><span>周${WD[i]}</span><b>${d.getDate()}</b></div>`).join('');
+  return out+`<div class="tt" style="--h:${H}px"><div class="tt-row tt-days"><div></div>${head}</div>
+    <div class="tt-row" style="height:${rows*H}px"><div class="tt-axis">${axis}</div>${cols}</div>${sumHtml}</div>
+    <div class="legend-k"><span><i></i>${ICON.loop.replace('<svg','<svg width="12" height="12" style="vertical-align:-1px;margin-right:3px"')}固定课（每周循环）</span><span><i class="d"></i>单次课（虚线框）</span><span>点空白处排课 · 时间过了的课自动算“已上”</span></div>`;
+}
+function lessonRow(l){
+  const st=lstate(l),fx=isFixed(l);
+  return `<button class="row c${cColor(l.clientId)}" data-act="editLesson" data-id="${l.id}"><span class="stripe"></span><span class="tm">${l.start}–${l.end}</span>
+    <span class="mid"><b>${esc(cName(l.clientId))}</b><span>${fx?'固定课':'单次课'} · ${esc(l.venue||'未填场地')}${l.note?' · '+esc(l.note):''}</span></span>
+    <span class="chip ${STATE_CHIP[st]}">${STATE_LABEL[st]}</span><span class="amt">${st==='cancelled'?'—':money(l.fee)}</span></button>`;
+}
+
+function viewClients(){
+  const all=clientsArr(true);
+  if(!all.length)return emptyStart();
+  const list=all.filter(c=>(ui.showArchived||!c.archived)&&(ui.filter==='all'||c.type===ui.filter));
+  const nStu=all.filter(c=>c.type==='student'&&!c.archived).length,nOrg=all.filter(c=>c.type==='org'&&!c.archived).length,nArc=all.filter(c=>c.archived).length;
+  let out=`<div class="bar-row"><div class="seg" role="group" aria-label="筛选">
+    <button data-act="filter" data-f="all" aria-pressed="${ui.filter==='all'}">全部</button>
+    <button data-act="filter" data-f="student" aria-pressed="${ui.filter==='student'}">私教学员 ${nStu}</button>
+    <button data-act="filter" data-f="org" aria-pressed="${ui.filter==='org'}">机构 ${nOrg}</button></div>
+    <span class="sp"></span>${nArc?`<label class="check"><input type="checkbox" id="show-arc" ${ui.showArchived?'checked':''}>显示以往学员（已停用） ${nArc}</label>`:''}</div>`;
+  out+='<div class="cards">'+list.map(c=>{
+    const s=summary(c);
+    const balLbl=s.balance<0?(c.type==='org'?'待结算':'欠费'):'预付余额';
+    const third=s.remain!=null?`<div><span>剩余课时</span><b class="${s.remain<=1?'neg':''}">${s.remain}<small> 节</small></b></div>`:`<div><span>累计课时</span><b>${hrsTxt(s.hrs)}<small> 小时</small></b></div>`;
+    const fx=seriesList(c.id).filter(x=>x.up.length);
+    return `<button class="card c${(c.color||0)%8}" data-act="clientDetail" data-id="${c.id}">
+      <div class="card-h"><span class="ava">${esc(String(c.name).replace(/^示例·/,'').slice(0,1))}</span><span class="nm"><b>${esc(c.name)}</b><span>${c.type==='org'?'机构':'私教学员'} · ${rateTxt(c)}${s.firstYm?` · ${+s.firstYm.slice(0,4)}.${+s.firstYm.slice(5)} 起`:''}</span></span>${c.archived?'<span class="chip">已停用</span>':''}</div>
+      <div class="kv"><div><span>累计上课</span><b>${s.count}<small> 节</small></b></div>
+        <div><span>${balLbl}</span><b class="${s.balance<0?'neg':s.balance>0?'pos':''}">${money(Math.abs(s.balance))}</b></div>${third}</div>
+      <div class="next">${fx.length?`<span class="chip acc">${ICON.loop}固定 ${esc(wdsTxt(fx[0].wds))} ${fx[0].last.start}</span>`:''}${s.next?`<span>下次 ${mdTxt(s.next.date)} 周${wdOf(s.next.date)} ${s.next.start}</span>`:`<span>${s.lastDone?'最近一次 '+s.lastDone.date:'暂无待上的课'}</span>`}</div>
+    </button>`;}).join('')+'</div>';
+  if(!list.length)out+='<div class="panel empty">这个分类下还没有人。</div>';
+  return out;
+}
+
+function viewPay(){
+  if(!S.clients.size)return emptyStart();
+  const cs=clientsArr(true).map(c=>({c,s:summary(c)}));
+  const owe=cs.filter(x=>x.s.balance<0).sort((a,b)=>a.s.balance-b.s.balance);
+  const pre=cs.filter(x=>x.s.balance>0);
+  const ym=ymOf(new Date());
+  const ps=payments().sort((a,b)=>b.date.localeCompare(a.date)||String(b.created||'').localeCompare(String(a.created||'')));
+  const thisM=ps.filter(p=>p.date.startsWith(ym));
+  let out=`<div class="tiles t3">
+    <div class="tile hl"><span>待收合计</span><b class="num">${money(-sum(owe,x=>x.s.balance))}</b><small>${owe.length} 位学员 / 机构未结清</small></div>
+    <div class="tile"><span>本月已到账</span><b class="num">${money(sum(thisM,p=>p.amount))}</b><small>${thisM.length} 笔</small></div>
+    <div class="tile"><span>预收余额</span><b class="num">${money(sum(pre,x=>x.s.balance))}</b><small>学员预付还没上完的部分</small></div></div>`;
+  out+=`<div class="panel"><div class="panel-h"><h3>待收款</h3><span class="sp"></span><span class="hint">已上课的课费减去已收款</span></div>`;
+  out+=owe.length?owe.map(({c,s})=>`<div class="row c${(c.color||0)%8}"><span class="stripe"></span><span class="mid"><b>${esc(c.name)}</b><span>${c.type==='org'?'机构待结算':'学员欠费'} · 已上 ${s.count} 节 · 已收 ${money(s.paid)}</span></span>
+      <span class="amt neg">${money(-s.balance)}</span><button class="btn sm primary" data-act="newPay" data-client="${c.id}" data-amount="${-s.balance}">记收款</button></div>`).join('')
+    :'<div class="empty">没有待收款，账都结清了。</div>';
+  out+='</div>';
+  out+=`<div class="panel"><div class="panel-h"><h3>收款记录</h3><span class="sp"></span><button class="btn sm" data-act="newPay">${ICON.plus}记一笔</button></div>`;
+  if(!ps.length)out+='<div class="empty">还没有收款记录。学员付了钱或机构结算后，在这里记一笔。</div>';
+  let curM='';
+  ps.forEach(p=>{
+    const m=p.date.slice(0,7);
+    if(m!==curM){curM=m;const mt=ps.filter(x=>x.date.startsWith(m));out+=`<div class="day-h"><span>${ymTxt(m)}</span><span style="flex:1"></span><span class="num muted" style="font-size:15px">${money(sum(mt,x=>x.amount))}</span></div>`;}
+    out+=`<button class="row c${cColor(p.clientId)}" data-act="editPay" data-id="${p.id}"><span class="stripe"></span><span class="tm">${mdTxt(p.date)} 周${wdOf(p.date)}</span>
+      <span class="mid"><b>${esc(cName(p.clientId))}</b><span>${esc(p.method||'')}${+p.lessons>0?` · 课时包 ${p.lessons} 节`:''}${p.note?' · '+esc(p.note):''}</span></span><span class="amt">${money(p.amount)}</span></button>`;
+  });
+  return out+'</div>';
+}
+
+function deltaTxt(cur,prev){
+  if(!prev)return '';
+  const p=Math.round((cur-prev)/prev*100);
+  if(Math.abs(p)>300)return '';
+  return `<span class="delta ${p>=0?'up':'down'}">${p>=0?'↑':'↓'}${Math.abs(p)}%</span>`;
+}
+function breakdownTable(d){
+  const rows=clientsArr(true).map(c=>{
+    const cl=d.ch.filter(l=>l.clientId===c.id),hs=d.hs.filter(h=>h.clientId===c.id);
+    return {c,n:cl.length+sum(hs,h=>h.count),h:sum(cl,dur)+sum(hs,h=>h.hours),inc:sum(cl,l=>l.fee)+sum(hs,h=>h.fee),cost:sum(cl,l=>l.cost),his:hs.length>0};
+  }).filter(r=>r.n||r.inc).sort((a,b)=>b.inc-a.inc);
+  const tot=Math.max(1,d.income);
+  return rows.length?`<div class="tbl-wrap"><table><thead><tr><th>学员 / 机构</th><th class="n">节数</th><th class="n">小时</th><th class="n">课酬</th><th class="n">成本</th><th>占比</th></tr></thead><tbody>${rows.map(r=>`<tr class="c${(r.c.color||0)%8} click" data-act="clientDetail" data-id="${r.c.id}">
+    <td><span class="inline"><span class="dot"></span>${esc(r.c.name)}${r.his?' <span class="chip">含补录</span>':''}</span></td><td class="n">${r.n}</td><td class="n">${hrsTxt(r.h)}</td><td class="n">${money(r.inc)}</td><td class="n">${r.cost?money(r.cost):'—'}</td>
+    <td><span class="share"><i style="width:${r.inc/tot*100}%"></i></span></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">这段时间还没有上过课。</div>';
+}
+function viewStats(){
+  if(!S.clients.size)return emptyStart();
+  const yearMode=ui.statMode==='year';
+  const seg=`<div class="seg" role="group" aria-label="统计周期"><button data-act="statMode" data-m="month" aria-pressed="${!yearMode}">月度</button><button data-act="statMode" data-m="year" aria-pressed="${yearMode}">年度</button></div>`;
+  const legend=`<div class="legend"><span><i class="b-pri"></i>私教</span><span><i class="b-org"></i>机构</span></div>`;
+  if(yearMode){
+    const y=ui.year,d=periodData(String(y)),prev=periodData(String(y-1)),thisY=new Date().getFullYear();
+    let out=`<div class="wk-nav"><button class="icon-btn" data-act="yr" data-d="-1" aria-label="上一年">${ICON.left}</button>
+      <div class="wk-title"><b>${y}年</b><small>${y===thisY?'今年 · 统计到今天':'年度统计'}</small></div>
+      <button class="icon-btn" data-act="yr" data-d="1" aria-label="下一年">${ICON.right}</button>${y!==thisY?'<button class="btn sm" data-act="yr" data-d="0">回到今年</button>':''}<span class="sp"></span>${seg}</div>`;
+    out+=`<div class="tiles">
+      <div class="tile hl"><span>全年课酬收入</span><b class="num">${money(d.income)}</b><small>私教 ${money(d.pri)} · 机构 ${money(d.org)} ${deltaTxt(d.income,prev.income)}</small></div>
+      <div class="tile"><span>全年净收入</span><b class="num">${money(d.income-d.cost)}</b><small>扣除场地等成本 ${money(d.cost)}</small></div>
+      <div class="tile"><span>全年课时</span><b class="num">${hrsTxt(d.hrs)}<small> 小时</small></b><small>${d.count} 节 ${deltaTxt(d.hrs,prev.hrs)}</small></div>
+      <div class="tile"><span>全年到账</span><b class="num">${money(d.received)}</b><small>${prev.income?`去年课酬 ${money(prev.income)}`:'实际收到的钱'}</small></div></div>`;
+    const months=[...Array(12)].map((_,i)=>`${y}-${pad(i+1)}`).map(k=>({k,...periodData(k)}));
+    const max=Math.max(1,...months.map(x=>x.pri+x.org));
+    out+=`<div class="panel"><div class="panel-h"><h3>${y}年每月课酬</h3><span class="sp"></span><span class="hint">点柱子看那个月的详情</span></div>${legend}
+      <div class="chart"><div class="bars">${months.map(x=>`<button class="bar" data-act="pickMonth" data-ym="${x.k}" aria-label="${ymTxt(x.k)} 课酬 ${money(x.pri+x.org)}">
+        <span class="bv">${x.pri+x.org?short(x.pri+x.org):''}</span>
+        <span class="stack"><i class="b-org" style="height:${x.org/max*100}%"></i><i class="b-pri" style="height:${x.pri/max*100}%"></i></span>
+        <span class="bl">${+x.k.slice(5)}<em>月</em></span></button>`).join('')}</div></div></div>`;
+    const mrows=months.filter(x=>x.count||x.received||x.upN);
+    out+=`<div class="panel"><div class="panel-h"><h3>月度明细</h3></div>${mrows.length?`<div class="tbl-wrap"><table><thead><tr><th>月份</th><th class="n">节数</th><th class="n">小时</th><th class="n">课酬</th><th class="n">成本</th><th class="n">净收入</th><th class="n">到账</th></tr></thead><tbody>
+      ${mrows.map(x=>`<tr class="click" data-act="pickMonth" data-ym="${x.k}"><td>${+x.k.slice(5)}月${x.hs.length?' <span class="chip">含补录</span>':''}${x.upN?` <span class="chip acc">待上 ${x.upN}</span>`:''}</td><td class="n">${x.count}</td><td class="n">${hrsTxt(x.hrs)}</td><td class="n">${money(x.income)}</td><td class="n">${x.cost?money(x.cost):'—'}</td><td class="n">${money(x.income-x.cost)}</td><td class="n">${money(x.received)}</td></tr>`).join('')}
+      <tr class="tot"><td>合计</td><td class="n">${d.count}</td><td class="n">${hrsTxt(d.hrs)}</td><td class="n">${money(d.income)}</td><td class="n">${d.cost?money(d.cost):'—'}</td><td class="n">${money(d.income-d.cost)}</td><td class="n">${money(d.received)}</td></tr></tbody></table></div>`:'<div class="empty">这一年还没有记录。</div>'}</div>`;
+    out+=`<div class="panel"><div class="panel-h"><h3>全年收入来源</h3></div>${breakdownTable(d)}</div>`;
+    return out;
+  }
+  const ym=ui.month,d=periodData(ym),prev=periodData(addMonths(ym,-1)),thisM=ymOf(new Date());
+  let out=`<div class="wk-nav"><button class="icon-btn" data-act="mon" data-d="-1" aria-label="上个月">${ICON.left}</button>
+    <div class="wk-title"><b>${ymTxt(ym)}</b><small>${ym===thisM?'本月 · 统计到今天':'月度统计'}</small></div>
+    <button class="icon-btn" data-act="mon" data-d="1" aria-label="下个月">${ICON.right}</button>${ym!==thisM?'<button class="btn sm" data-act="mon" data-d="0">回到本月</button>':''}<span class="sp"></span>${seg}</div>`;
+  out+=`<div class="tiles">
+    <div class="tile hl"><span>课酬收入</span><b class="num">${money(d.income)}</b><small>私教 ${money(d.pri)} · 机构 ${money(d.org)} ${deltaTxt(d.income,prev.income)}</small></div>
+    <div class="tile"><span>净收入</span><b class="num">${money(d.income-d.cost)}</b><small>扣除场地等成本 ${money(d.cost)}</small></div>
+    <div class="tile"><span>已上课时</span><b class="num">${hrsTxt(d.hrs)}<small> 小时</small></b><small>${d.count} 节${d.cancel?` · 取消 ${d.cancel} 节`:''}${d.hisFee?' · 含补录':''}</small></div>
+    <div class="tile"><span>本月到账</span><b class="num">${money(d.received)}</b><small>${d.upN?`还有 ${d.upN} 节待上，约 ${money(d.upFee)}`:'实际收到的钱'}</small></div></div>`;
+  const months=[...Array(12)].map((_,i)=>addMonths(ym,i-11)).map(k=>({k,...periodData(k)}));
+  const max=Math.max(1,...months.map(x=>x.pri+x.org));
+  out+=`<div class="panel"><div class="panel-h"><h3>近 12 个月课酬</h3><span class="sp"></span><span class="hint">点柱子切换月份</span></div>${legend}
+    <div class="chart"><div class="bars">${months.map(x=>`<button class="bar ${x.k===ym?'sel':''}" data-act="pickMonth" data-ym="${x.k}" aria-label="${ymTxt(x.k)} 课酬 ${money(x.pri+x.org)}">
+      <span class="bv">${x.pri+x.org?short(x.pri+x.org):''}</span>
+      <span class="stack"><i class="b-org" style="height:${x.org/max*100}%"></i><i class="b-pri" style="height:${x.pri/max*100}%"></i></span>
+      <span class="bl">${+x.k.slice(5)}<em>月</em></span></button>`).join('')}</div></div></div>`;
+  const wh=[0,0,0,0,0,0,0];[...d.ch,...d.up].forEach(l=>{wh[wdIdx(l.date)]+=dur(l);});
+  const wmax=Math.max(1,...wh);
+  const wd=`<div class="wd">${wh.map((h,i)=>`<span>周${WD[i]}</span><span class="track"><i style="width:${h/wmax*100}%"></i></span><span class="num">${hrsTxt(h)} 小时</span>`).join('')}</div>`;
+  out+=`<div class="grid2"><div class="panel"><div class="panel-h"><h3>收入来源</h3></div>${breakdownTable(d)}</div>
+    <div class="panel"><div class="panel-h"><h3>每周几最忙</h3><span class="sp"></span><span class="hint">本月含待上的课</span></div>${wd}</div></div>`;
+  return out;
+}
+
+const BRAND_SVG='<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4l5 15M16 3v16M23 4l-5 15M6 8c3 1 7 1.5 10 1.5S23 9 26 8"/><path d="M8 5.5L13 19h6l5-13.5"/><circle cx="16" cy="24" r="5" fill="currentColor" stroke="none"/></svg>';
+let authTab='in';
+function viewAuth(){
+  const up=authTab==='up';
+  return `<div class="auth"><div class="panel auth-card">
+    ${installBanner()}
+    <div class="auth-brand">${BRAND_SVG}<span>羽球课表</span></div>
+    <p class="muted" style="margin:0">排课、记收费、算收入。数据存在云端，换手机、换电脑登录同一个账号都能看到。</p>
+    <div class="seg" role="group" aria-label="登录或注册" style="align-self:flex-start"><button type="button" data-act="authTab" data-t="in" aria-pressed="${!up}">登录</button><button type="button" data-act="authTab" data-t="up" aria-pressed="${up}">注册新账号</button></div>
+    <form id="a-form" novalidate style="display:flex;flex-direction:column;gap:12px">
+      <div class="field"><label for="a-email">邮箱</label><input id="a-email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" value="${esc(lsGet('yuqiu-last-email')||'')}"></div>
+      <div class="field"><label for="a-pw">密码</label><input id="a-pw" type="password" autocomplete="${up?'new-password':'current-password'}" placeholder="${up?'至少 6 位':''}"></div>
+      ${up?'<div class="field"><label for="a-pw2">再输一次密码</label><input id="a-pw2" type="password" autocomplete="new-password"></div>':''}
+      <div id="a-err" class="errbox" hidden></div>
+      <div id="a-ok" class="okbox" hidden></div>
+      <button class="btn primary block" id="a-submit" type="submit">${up?'注册并登录':'登录'}</button>
+    </form>
+    <p class="hint" style="margin:0">每个账号的数据互相独立，别人看不到你的学员和收入。</p>
+  </div></div>`;
+}
+function mountAuth(){
+  const f=$('#a-form');if(!f)return;
+  const err=$('#a-err'),ok=$('#a-ok'),btn=$('#a-submit');
+  const show=(el,m)=>{err.hidden=ok.hidden=true;if(el){el.textContent=m;el.hidden=false;}};
+  f.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const email=$('#a-email').value.trim(),pw=$('#a-pw').value,up=authTab==='up';
+    if(!/^\S+@\S+\.\S+$/.test(email))return show(err,'请填一个有效的邮箱');
+    if(pw.length<6)return show(err,'密码至少 6 位');
+    if(up&&pw!==$('#a-pw2').value)return show(err,'两次输入的密码不一样');
+    btn.disabled=true;btn.textContent=up?'正在注册…':'正在登录…';show(null);
+    lsSet('yuqiu-last-email',email);
+    try{
+      const j=up?await authPost('signup',{email,password:pw}):await authPost('token?grant_type=password',{email,password:pw});
+      if(j&&j.access_token){setSession(j);enterApp();toast(up?'注册成功，欢迎使用':'已登录');return;}
+      authTab='in';render();
+      const o=$('#a-ok');o.textContent='注册成功。云端要求先确认邮箱：去邮箱点确认链接，再回来登录。';o.hidden=false;
+    }catch(ex){
+      show(err,apiMsg(ex));btn.disabled=false;btn.textContent=up?'注册并登录':'登录';
+    }
+  });
+}
+function viewSetup(){
+  return `<div class="auth"><div class="panel auth-card">
+    <div class="auth-brand">${BRAND_SVG}<span>连接云端</span></div>
+    <p class="muted" style="margin:0">这个课表把数据存在你自己的 Supabase 项目里。照《云端配置步骤》建好项目后，把下面两项填进来。</p>
+    <form id="s-form" novalidate style="display:flex;flex-direction:column;gap:12px">
+      <div class="field"><label for="s-url">Project URL</label><input id="s-url" placeholder="https://xxxx.supabase.co" autocomplete="off" spellcheck="false"></div>
+      <div class="field"><label for="s-key">anon key 或 publishable key</label><input id="s-key" placeholder="eyJ… 或 sb_publishable_…" autocomplete="off" spellcheck="false"></div>
+      <div id="s-err" class="errbox" hidden></div>
+      <button class="btn primary block" id="s-submit" type="submit">检查并保存</button>
+    </form>
+    <p class="hint" style="margin:0">只存在这台设备上。想分享给朋友，就把这两项写进 HTML 文件开头的 CONFIG 里，对方打开就能直接注册。</p>
+  </div></div>`;
+}
+function mountSetup(){
+  const f=$('#s-form');if(!f)return;
+  f.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const url=$('#s-url').value.trim().replace(/\/+$/,''),key=$('#s-key').value.trim(),err=$('#s-err'),btn=$('#s-submit');
+    err.hidden=true;
+    if(!/^https:\/\/[^\s/]+$/.test(url)){err.textContent='Project URL 应该像 https://xxxx.supabase.co 这样';err.hidden=false;return;}
+    if(key.length<20){err.textContent='key 看起来不完整，请整段复制';err.hidden=false;return;}
+    btn.disabled=true;btn.textContent='正在检查…';
+    CFG={url,key,baked:false};
+    try{
+      await http('GET',url+'/auth/v1/settings');
+      lsSet(CFG_KEY,JSON.stringify({url,key}));store.mode='auth';render();toast('云端连接成功');
+    }catch(ex){
+      CFG=null;btn.disabled=false;btn.textContent='检查并保存';
+      err.textContent=ex.net?'连不上这个地址，请检查 Project URL 和网络':ex.status===401?'key 不对，请重新复制 anon 或 publishable key':apiMsg(ex);err.hidden=false;
+    }
+  });
+}
+
+/* ---------- sheets ---------- */
+let sheetCleanup=null;
+function openSheet(html,onMount){
+  closeSheet();
+  const root=$('#sheet-root');
+  root.innerHTML=`<div class="sheet-wrap"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+  const wrap=root.firstElementChild;
+  wrap.addEventListener('mousedown',e=>{if(e.target===wrap)closeSheet();});
+  const sheet=wrap.firstElementChild;
+  sheetCleanup=onMount?onMount(sheet):null;
+  const f=sheet.querySelector('input:not([type=hidden]):not([type=checkbox]),select,textarea');
+  if(f&&window.matchMedia('(min-width:860px)').matches)setTimeout(()=>{try{f.focus();}catch(e){}},30);
+}
+function closeSheet(){if(typeof sheetCleanup==='function')sheetCleanup();sheetCleanup=null;$('#sheet-root').innerHTML='';}
+const sheetHead=t=>`<div class="sheet-h"><h2>${t}</h2><button class="icon-btn" data-act="close" aria-label="关闭">${ICON.close}</button></div>`;
+function armDelete(btn,label,fn){
+  if(btn.classList.contains('armed')){fn();return;}
+  btn.classList.add('armed');btn.textContent=label;
+  setTimeout(()=>{if(btn.isConnected){btn.classList.remove('armed');btn.textContent=btn.dataset.orig||'删除';}},4000);
+}
+const segBind=(el,attr,fn)=>{if(!el)return;el.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset[attr]);}));};
+const clientOptions=(sel,includeArchivedId)=>clientsArr(true).filter(c=>!c.archived||c.id===includeArchivedId).map(c=>`<option value="${c.id}" ${c.id===sel?'selected':''}>${esc(c.name)}${c.type==='org'?'（机构）':''}</option>`).join('');
+const venues=()=>[...new Set([...lessons().map(l=>l.venue),...clientsArr(true).map(c=>c.venue)].filter(Boolean))];
+
+function genDates(startDate,wds,mode,n,until){
+  const d0=parseYmd(startDate);
+  const endD=mode==='weeks'?addDays(weekStart(d0),7*Math.max(1,n)-1):(until?parseYmd(until):d0);
+  const out=[];
+  for(let d=new Date(d0);d<=endD&&out.length<300;d=addDays(d,1))if(wds.has((d.getDay()+6)%7))out.push(ymd(d));
+  return out;
+}
+
+function openLessonForm(opt){
+  opt=opt||{};
+  const l=opt.id?S.lessons.get(opt.id):null;
+  const cs=clientsArr();
+  if(!l&&!cs.length){toast('先添加一个学员或机构');openClientForm();return;}
+  let v;
+  if(l)v=Object.assign({},l);
+  else{
+    const c=client(opt.clientId)||client(ui.lastClient)||cs[0];
+    const start=opt.start||'19:00',end=fromMin(Math.min(toMin(start)+(+c.dur||90),23*60+55));
+    v={clientId:c.id,date:opt.date||ymd(new Date()),start,end,venue:c.venue||'',fee:calcFee(c,start,end),cost:+c.cost||0,status:'normal',note:''};
+  }
+  const series=l&&l.seriesId?lessons().filter(x=>x.seriesId===l.seriesId).sort(byTime):[];
+  const later=l?series.filter(x=>x.date>=l.date):[];
+  const st=l?lstate(l):'upcoming';
+  const startFixed=!l&&(opt.fixed!=null?opt.fixed:false);
+  const sInfo=series.length?{wds:[...new Set(series.map(x=>wdIdx(x.date)))].sort(),done:series.filter(charged).length,up:series.filter(x=>lstate(x)==='upcoming').length}:null;
+  openSheet(`${sheetHead(l?'编辑课程':'排课')}
+    ${l?`<div class="inline"><span class="chip ${STATE_CHIP[st]}">${STATE_LABEL[st]}</span>${series.length?`<span class="chip acc">${ICON.loop}固定课</span>`:'<span class="chip">单次课</span>'}<span class="hint">${l.date} 周${wdOf(l.date)}</span></div>
+      ${sInfo?`<div class="infobox">这节属于固定课：每${esc(wdsTxt(sInfo.wds))} ${l.start}，共 ${series.length} 节（已上 ${sInfo.done}，待上 ${sInfo.up}），排到 ${series[series.length-1].date}。</div>`:''}`
+    :`<div class="field"><span class="lbl">课程类型</span><div class="seg big" role="group" id="f-kind">
+        <button type="button" data-k="single" aria-pressed="${!startFixed}">单次课<small>临时约的、只上这一次</small></button>
+        <button type="button" data-k="fixed" aria-pressed="${startFixed}">固定课<small>每周固定时间循环上</small></button></div></div>`}
+    <div class="field"><label for="f-client">学员 / 机构</label><select id="f-client">${clientOptions(v.clientId,v.clientId)}</select></div>
+    <div class="row3"><div class="field"><label for="f-date" id="f-date-l">${l?'日期':'日期'}</label><input type="date" id="f-date" value="${v.date}"></div>
+      <div class="field"><label for="f-start">开始</label><input type="time" id="f-start" step="300" value="${v.start}"></div>
+      <div class="field"><label for="f-end">结束</label><input type="time" id="f-end" step="300" value="${v.end}"></div></div>
+    <div class="inline"><span class="lbl">时长</span>${[60,90,120,150].map(m=>`<button class="btn sm" type="button" data-dur="${m}">${m/60}小时</button>`).join('')}</div>
+    ${!l?`<div class="fixedbox" id="f-fixed" ${startFixed?'':'hidden'}>
+      <div class="field"><span class="lbl">每周哪几天上</span><div class="wdpick" id="f-wds">${WD.map((w,i)=>`<button type="button" data-w="${i}" aria-pressed="${i===wdIdx(v.date)}">${w}</button>`).join('')}</div></div>
+      <div class="field"><span class="lbl">排到什么时候</span><div class="inline"><div class="seg" role="group" id="f-until-mode"><button type="button" data-u="weeks" aria-pressed="true">排几周</button><button type="button" data-u="date" aria-pressed="false">排到某天</button></div>
+        <span id="f-weeks-w" class="inline"><input class="inp sm" id="f-weeks" inputmode="numeric" value="12"><span>周</span></span>
+        <input type="date" class="inp" id="f-until" style="width:auto" hidden value="${ymd(addDays(parseYmd(v.date),7*12))}"></div></div>
+      <div class="hint" id="f-preview"></div></div>`:''}
+    <div class="field"><label for="f-venue">场地</label><input id="f-venue" list="f-venues" value="${esc(v.venue)}" placeholder="例如：奥体中心 3号场"><datalist id="f-venues">${venues().map(x=>`<option value="${esc(x)}">`).join('')}</datalist></div>
+    <div class="row2"><div class="field"><label for="f-fee">课费（元/节）</label><input id="f-fee" inputmode="decimal" value="${v.fee}"></div>
+      <div class="field"><label for="f-cost">场地费等成本（元/节）</label><input id="f-cost" inputmode="decimal" value="${v.cost||0}"></div></div>
+    <div class="field"><span class="lbl">状态</span><div class="seg" role="group" id="f-status">
+      <button type="button" data-s="normal" aria-pressed="${v.status==='normal'||!v.status}">正常上课</button>
+      <button type="button" data-s="absent" aria-pressed="${v.status==='absent'}">学员缺席(计费)</button>
+      <button type="button" data-s="cancelled" aria-pressed="${v.status==='cancelled'}">取消(不计费)</button></div></div>
+    ${later.length>1?`<div class="field"><span class="lbl">修改范围</span><div class="seg" role="group" id="f-scope"><button type="button" data-sc="one" aria-pressed="true">只改这一节</button><button type="button" data-sc="after" aria-pressed="false">这节及之后 ${later.length} 节</button></div><span class="hint">“之后”只同步学员、时间、场地和费用；状态只改这一节。</span></div>`:''}
+    <div class="field"><label for="f-note">备注 / 上课内容</label><textarea id="f-note" placeholder="例如：正手高远球、步法">${esc(v.note||'')}</textarea></div>
+    <div id="f-warn" class="warnbox" hidden></div>
+    <div class="actions">${l?'<button class="btn danger" id="f-del" data-orig="删除">删除</button>':''}<span class="sp"></span><button class="btn" data-act="close">取消</button><button class="btn primary" id="f-save">保存</button></div>`,
+  sheet=>{
+    let feeTouched=!!l,costTouched=!!l,status=v.status||'normal',scope='one',fixed=startFixed,untilMode='weeks',wdsTouched=false;
+    const wds=new Set([wdIdx(v.date)]);
+    const g=id=>sheet.querySelector('#'+id);
+    const dates=()=>{
+      if(l||!fixed)return [g('f-date').value].filter(Boolean);
+      return genDates(g('f-date').value,wds,untilMode,parseInt(g('f-weeks').value)||1,g('f-until').value);
+    };
+    const preview=()=>{
+      if(l||!fixed)return;
+      const ds=dates();
+      g('f-preview').textContent=ds.length?`将排 ${ds.length} 节：${mdTxt(ds[0])} 起，每${wdsTxt([...wds].sort())}，到 ${ds[ds.length-1]} 为止。之后可以在学员详情里续排或提前结束。`:'没有符合的日期，请检查星期和结束时间。';
+    };
+    const recalc=()=>{
+      const c=client(g('f-client').value);
+      if(!feeTouched)g('f-fee').value=calcFee(c,g('f-start').value,g('f-end').value);
+      checkWarn();
+    };
+    const checkWarn=()=>{
+      preview();
+      const s=g('f-start').value,e=g('f-end').value,w=g('f-warn');
+      const msgs=[];
+      if(s&&e&&toMin(e)<=toMin(s))msgs.push('结束时间要晚于开始时间');
+      else if(s&&e&&status!=='cancelled'){
+        const ignore=new Set(l?(scope==='after'?later.map(x=>x.id):[l.id]):[]);let hit=[];
+        dates().forEach(dt=>{hit=hit.concat(conflicts(dt,s,e,ignore));});
+        if(hit.length)msgs.push('时间冲突：'+hit.slice(0,3).map(x=>`${mdTxt(x.date)} ${x.start}–${x.end} ${cName(x.clientId)}`).join('；')+(hit.length>3?` 等 ${hit.length} 节`:''));
+      }
+      w.hidden=!msgs.length;w.textContent=msgs.join('。');
+    };
+    g('f-client').addEventListener('change',()=>{
+      const c=client(g('f-client').value);if(!c)return;
+      if(!l){g('f-end').value=fromMin(Math.min(toMin(g('f-start').value)+(+c.dur||90),23*60+55));if(c.venue)g('f-venue').value=c.venue;}
+      if(!costTouched)g('f-cost').value=+c.cost||0;
+      feeTouched=false;recalc();
+    });
+    let prevStart=g('f-start').value;
+    g('f-start').addEventListener('change',()=>{const ns=g('f-start').value;if(ns&&prevStart){const d=toMin(g('f-end').value)-toMin(prevStart);if(d>0)g('f-end').value=fromMin(Math.min(toMin(ns)+d,23*60+55));}prevStart=ns;recalc();});
+    g('f-end').addEventListener('change',recalc);
+    g('f-date').addEventListener('change',()=>{
+      if(!l&&!wdsTouched&&g('f-date').value){wds.clear();wds.add(wdIdx(g('f-date').value));g('f-wds').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',wds.has(+b.dataset.w)));}
+      checkWarn();
+    });
+    g('f-fee').addEventListener('input',()=>feeTouched=true);
+    g('f-cost').addEventListener('input',()=>costTouched=true);
+    sheet.querySelectorAll('[data-dur]').forEach(b=>b.addEventListener('click',()=>{const s=toMin(g('f-start').value||'19:00');g('f-end').value=fromMin(Math.min(s+(+b.dataset.dur),23*60+55));if(!l)feeTouched=false;recalc();}));
+    segBind(g('f-status'),'s',x=>{status=x;checkWarn();});
+    segBind(g('f-scope'),'sc',x=>{scope=x;checkWarn();});
+    segBind(g('f-kind'),'k',x=>{fixed=x==='fixed';g('f-fixed').hidden=!fixed;checkWarn();});
+    segBind(g('f-until-mode'),'u',x=>{untilMode=x;g('f-weeks-w').hidden=x!=='weeks';g('f-until').hidden=x==='weeks';checkWarn();});
+    if(g('f-wds'))g('f-wds').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+      const i=+b.dataset.w;if(wds.has(i)){if(wds.size>1)wds.delete(i);}else wds.add(i);wdsTouched=true;
+      g('f-wds').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',wds.has(+x.dataset.w)));checkWarn();}));
+    ['f-weeks','f-until'].forEach(id=>{if(g(id)){g(id).addEventListener('input',checkWarn);g(id).addEventListener('change',checkWarn);}});
+    checkWarn();
+    g('f-save').addEventListener('click',()=>{
+      const clientId=g('f-client').value,date=g('f-date').value,start=g('f-start').value,end=g('f-end').value;
+      if(!clientId||!date||!start||!end){toast('请填好学员、日期和时间');return;}
+      if(toMin(end)<=toMin(start)){toast('结束时间要晚于开始时间');return;}
+      const fee=r2(parseFloat(g('f-fee').value)||0),cost=r2(parseFloat(g('f-cost').value)||0);
+      const venue=g('f-venue').value.trim(),note=g('f-note').value.trim();
+      ui.lastClient=clientId;
+      const ops=[];
+      if(!l){
+        const ds=dates();if(!ds.length){toast('没有符合的日期，请检查星期和结束时间');return;}
+        const sid=fixed?uid():null,now=new Date().toISOString();
+        ds.forEach((dt,i)=>{const o={id:uid()+i,clientId,date:dt,start,end,venue,fee,cost,status,note,created:now};if(sid)o.seriesId=sid;ops.push(['put','lessons',o]);});
+        toast(fixed?`已排好固定课 ${ds.length} 节`:'已排课');
+      }else{
+        const delta=Math.round((parseYmd(date)-parseYmd(l.date))/864e5);
+        ops.push(['put','lessons',Object.assign({},l,{clientId,date,start,end,venue,fee,cost,status,note})]);
+        if(scope==='after')later.filter(x=>x.id!==l.id).forEach(x=>ops.push(['put','lessons',Object.assign({},x,{clientId,start,end,venue,fee,cost,date:ymd(addDays(parseYmd(x.date),delta))})]));
+        toast(scope==='after'?`已更新 ${later.length} 节课`:'已保存');
+      }
+      commit(ops);closeSheet();
+    });
+    if(g('f-del'))g('f-del').addEventListener('click',e=>{
+      const n=scope==='after'?later.length:1;
+      armDelete(e.currentTarget,n>1?`确认删除 ${n} 节`:'确认删除',()=>{
+        const ids=scope==='after'?later.map(x=>x.id):[l.id];
+        commit(ids.map(i=>['del','lessons',i]));closeSheet();toast(`已删除 ${ids.length} 节课`);
+      });
+    });
+  });
+}
+
+function openClientForm(id){
+  const c=id?client(id):null;
+  const v=c?Object.assign({},c):{name:'',type:'student',rate:'',rateUnit:'lesson',dur:90,venue:'',cost:0,phone:'',note:'',color:S.clients.size%8};
+  openSheet(`${sheetHead(c?'编辑资料':'添加学员 / 机构')}
+    <div class="field"><span class="lbl">类型</span><div class="seg" role="group" id="c-type"><button type="button" data-t="student" aria-pressed="${v.type!=='org'}">私教学员</button><button type="button" data-t="org" aria-pressed="${v.type==='org'}">机构</button></div></div>
+    <div class="field"><label for="c-name">名称</label><input id="c-name" value="${esc(v.name)}" placeholder="学员姓名，或机构名称"></div>
+    <div class="row2"><div class="field"><label for="c-rate">课费（元）</label><input id="c-rate" inputmode="decimal" value="${v.rate}" placeholder="例如 200"></div>
+      <div class="field"><span class="lbl">计费方式</span><div class="seg" role="group" id="c-unit"><button type="button" data-u="lesson" aria-pressed="${v.rateUnit!=='hour'}">按节</button><button type="button" data-u="hour" aria-pressed="${v.rateUnit==='hour'}">按小时</button></div></div></div>
+    <div class="row2"><div class="field"><label for="c-dur">默认时长（分钟）</label><input id="c-dur" inputmode="numeric" value="${v.dur||90}"></div>
+      <div class="field"><label for="c-cost">每节场地费（元）</label><input id="c-cost" inputmode="decimal" value="${v.cost||0}"></div></div>
+    <div class="field"><label for="c-venue">常用场地</label><input id="c-venue" list="c-venues" value="${esc(v.venue||'')}" placeholder="排课时自动带出"><datalist id="c-venues">${venues().map(x=>`<option value="${esc(x)}">`).join('')}</datalist></div>
+    <div class="field"><label for="c-phone">联系方式</label><input id="c-phone" value="${esc(v.phone||'')}" placeholder="电话、微信或联系人（可不填）"></div>
+    <div class="field"><span class="lbl">课表颜色</span><div class="sw" id="c-color">${[0,1,2,3,4,5,6,7].map(i=>`<button type="button" class="c${i}" data-c="${i}" aria-label="颜色 ${i+1}" aria-pressed="${(v.color||0)%8===i}"></button>`).join('')}</div></div>
+    <div class="field"><label for="c-note">备注</label><textarea id="c-note" placeholder="水平、目标、家长信息等">${esc(v.note||'')}</textarea></div>
+    ${c?`<label class="check"><input type="checkbox" id="c-arc" ${c.archived?'checked':''}>停用（以往学员：不再出现在排课里，历史记录保留）</label>`
+      :`<label class="check"><input type="checkbox" id="c-old">以前就在教这个学生，保存后补录之前上过的课</label>`}
+    <div class="actions">${c?'<button class="btn danger" id="c-del" data-orig="删除">删除</button>':''}<span class="sp"></span><button class="btn" data-act="close">取消</button><button class="btn primary" id="c-save">保存</button></div>`,
+  sheet=>{
+    const g=x=>sheet.querySelector('#'+x);let type=v.type||'student',unit=v.rateUnit||'lesson',color=(v.color||0)%8;
+    segBind(g('c-type'),'t',x=>type=x);segBind(g('c-unit'),'u',x=>unit=x);segBind(g('c-color'),'c',x=>color=+x);
+    g('c-save').addEventListener('click',()=>{
+      const name=g('c-name').value.trim();if(!name){toast('请填写名称');g('c-name').focus();return;}
+      const o=Object.assign({},c||{id:uid(),created:new Date().toISOString()},{name,type,rate:r2(parseFloat(g('c-rate').value)||0),rateUnit:unit,dur:parseInt(g('c-dur').value)||90,
+        cost:r2(parseFloat(g('c-cost').value)||0),venue:g('c-venue').value.trim(),phone:g('c-phone').value.trim(),note:g('c-note').value.trim(),color,archived:c?g('c-arc').checked:false});
+      const old=!c&&g('c-old').checked;
+      put('clients',o);closeSheet();toast(c?'已保存':'已添加 '+name);
+      if(old)openHistoryForm({client:o.id});else if(c)openClientDetail(o.id);
+    });
+    if(g('c-del'))g('c-del').addEventListener('click',e=>{
+      const s=summary(c);
+      const n=s.ls.length+s.ps.length+s.hs.length;
+      armDelete(e.currentTarget,n?`连同 ${n} 条课程/收款/补录记录一起删除`:'确认删除',()=>{
+        commit([['del','clients',c.id],...s.ls.map(x=>['del','lessons',x.id]),...s.ps.map(x=>['del','payments',x.id]),...s.hs.map(x=>['del','history',x.id])]);closeSheet();toast('已删除 '+c.name);
+      });
+    });
+  });
+}
+
+function openHistoryForm(opt){
+  opt=opt||{};
+  const h=opt.id?S.history.get(opt.id):null;
+  const c=client(h?h.clientId:opt.client);if(!c)return;
+  const per=c.rateUnit==='hour'?(+c.rate||0)*((+c.dur||90)/60):(+c.rate||0);
+  const v=h?Object.assign({},h):{ym:addMonths(ymOf(new Date()),-1),count:'',hours:'',fee:'',paid:'',note:''};
+  openSheet(`${sheetHead(h?'编辑补录':'补录以往上课情况')}
+    <div class="infobox">给 <b>${esc(c.name)}</b> 补录用这个工具之前上过的课，按月填一条汇总就行，不用一节一节录。补录的节数、课酬、已收都会算进累计、余额和统计里。</div>
+    <div class="row2"><div class="field"><label for="h-ym">哪个月</label><input type="month" id="h-ym" value="${v.ym}" placeholder="2025-09"></div>
+      <div class="field"><label for="h-count">上了几节</label><input id="h-count" inputmode="numeric" value="${v.count}" placeholder="例如 8"></div></div>
+    <div class="row2"><div class="field"><label for="h-hours">一共多少小时</label><input id="h-hours" inputmode="decimal" value="${v.hours}"></div>
+      <div class="field"><label for="h-fee">课酬合计（元）</label><input id="h-fee" inputmode="decimal" value="${v.fee}"></div></div>
+    <div class="field"><label for="h-paid">那时已经收到的钱（元）</label><input id="h-paid" inputmode="decimal" value="${v.paid}"><span class="hint">全部结清就和课酬合计一样；还欠着的部分会算进“欠费”。</span></div>
+    <div class="field"><label for="h-note">备注</label><input id="h-note" value="${esc(v.note||'')}" placeholder="例如：暑假集训班"></div>
+    <div class="actions">${h?'<button class="btn danger" id="h-del" data-orig="删除">删除</button>':''}<span class="sp"></span><button class="btn" data-act="close">取消</button><button class="btn primary" id="h-save">保存</button>${!h?'<button class="btn navy" id="h-save-more">保存并再录一个月</button>':''}</div>`,
+  sheet=>{
+    const g=x=>sheet.querySelector('#'+x);const touched={};
+    ['h-hours','h-fee','h-paid'].forEach(id=>g(id).addEventListener('input',()=>touched[id]=true));
+    g('h-count').addEventListener('input',()=>{
+      const n=parseInt(g('h-count').value)||0;
+      if(!touched['h-hours'])g('h-hours').value=n?hrsTxt(n*(+c.dur||90)/60):'';
+      if(!touched['h-fee'])g('h-fee').value=n?r2(n*per):'';
+      if(!touched['h-paid'])g('h-paid').value=g('h-fee').value;
+    });
+    g('h-fee').addEventListener('input',()=>{if(!touched['h-paid'])g('h-paid').value=g('h-fee').value;});
+    const save=more=>{
+      const ym=g('h-ym').value.trim(),count=parseInt(g('h-count').value)||0;
+      if(!/^\d{4}-\d{2}$/.test(ym)){toast('月份请写成 2025-09 这样');return;}
+      if(!count&&!(parseFloat(g('h-fee').value)>0)){toast('请填上了几节，或者课酬合计');return;}
+      const o=Object.assign({},h||{id:uid(),created:new Date().toISOString()},{clientId:c.id,ym,count,hours:r2(parseFloat(g('h-hours').value)||0),
+        fee:r2(parseFloat(g('h-fee').value)||0),paid:r2(parseFloat(g('h-paid').value)||0),note:g('h-note').value.trim()});
+      put('history',o);toast(`已补录 ${ymTxt(ym)} ${count} 节`);
+      if(more){openHistoryForm({client:c.id});const nx=$('#h-ym');if(nx)nx.value=addMonths(ym,-1);}
+      else openClientDetail(c.id);
+    };
+    g('h-save').addEventListener('click',()=>save(false));
+    if(g('h-save-more'))g('h-save-more').addEventListener('click',()=>save(true));
+    if(g('h-del'))g('h-del').addEventListener('click',e=>armDelete(e.currentTarget,'确认删除',()=>{commit([['del','history',h.id]]);toast('已删除');openClientDetail(c.id);}));
+  });
+}
+
+function clientMonths(s){
+  const m={};
+  const row=k=>m[k]=m[k]||{ym:k,n:0,h:0,fee:0,paid:0,his:false,up:0};
+  s.ls.forEach(l=>{const r=row(l.date.slice(0,7));if(charged(l)){r.n++;r.h+=dur(l);r.fee+=+l.fee||0;}else if(lstate(l)==='upcoming')r.up++;});
+  s.ps.forEach(p=>{row(p.date.slice(0,7)).paid+=+p.amount||0;});
+  s.hs.forEach(h=>{const r=row(h.ym);r.n+=+h.count||0;r.h+=+h.hours||0;r.fee+=+h.fee||0;r.paid+=+h.paid||0;r.his=true;});
+  return Object.values(m).filter(r=>r.n||r.paid||r.up).sort((a,b)=>b.ym.localeCompare(a.ym));
+}
+let detailAll=false;
+function openClientDetail(id,showAll){
+  const c=client(id);if(!c)return;
+  detailAll=!!showAll;
+  const s=summary(c);
+  const recent=s.ls.slice().sort((a,b)=>byTime(b,a));
+  const up=recent.filter(l=>lstate(l)==='upcoming').reverse().slice(0,4);
+  const pastAll=recent.filter(l=>lstate(l)!=='upcoming');
+  const past=detailAll?pastAll:pastAll.slice(0,8);
+  const ps=s.ps.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  const months=clientMonths(s);
+  const ser=seriesList(c.id);
+  const mini=l=>{const st=lstate(l);return `<button class="row" data-act="editLesson" data-id="${l.id}"><span class="tm num">${mdTxt(l.date)} 周${wdOf(l.date)} ${l.start}</span><span class="mid"><span>${isFixed(l)?'固定':'单次'} · ${esc(l.venue||'')}${l.note?' · '+esc(l.note):''}</span></span><span class="chip ${STATE_CHIP[st]}">${STATE_LABEL[st]}</span><span class="amt">${st==='cancelled'?'—':money(l.fee)}</span></button>`;};
+  openSheet(`<div class="sheet-h c${(c.color||0)%8}"><span class="ava">${esc(String(c.name).replace(/^示例·/,'').slice(0,1))}</span><h2>${esc(c.name)}</h2><button class="btn sm" data-act="editClient" data-id="${c.id}">编辑</button><button class="icon-btn" data-act="close" aria-label="关闭">${ICON.close}</button></div>
+    <div class="hint">${c.type==='org'?'机构':'私教学员'} · ${rateTxt(c)}${c.venue?' · '+esc(c.venue):''}${c.phone?' · '+esc(c.phone):''}${s.firstYm?` · ${ymTxt(s.firstYm)}开始上课`:''}${c.archived?' · 已停用':''}${c.note?'<br>'+esc(c.note):''}</div>
+    <div class="stat-strip"><div><span>累计上课</span><b>${s.count} 节</b></div><div><span>累计课时</span><b>${hrsTxt(s.hrs)} 小时</b></div><div><span>累计课酬</span><b>${money(s.due)}</b></div>
+      <div><span>${s.balance<0?(c.type==='org'?'待结算':'欠费'):'余额'}</span><b class="${s.balance<0?'neg':s.balance>0?'pos':''}">${money(Math.abs(s.balance))}</b></div></div>
+    ${s.remain!=null?`<div class="hint">课时包剩余 <b class="num" style="font-size:16px;color:var(--fg)">${s.remain}</b> 节（从第一次买课时包起算）</div>`:''}
+    <div class="inline"><button class="btn primary" data-act="newPay" data-client="${c.id}" ${s.balance<0?`data-amount="${-s.balance}"`:''}>记收款</button><button class="btn" data-act="newLessonFor" data-client="${c.id}">排课</button><button class="btn" data-act="newHistory" data-client="${c.id}">补录以往上课</button></div>
+    ${ser.length?`<div class="section-t">固定课</div><div class="mini">${ser.map(x=>`<div class="row"><span class="mid"><b>${ICON.loop.replace('<svg','<svg width="13" height="13" style="vertical-align:-1px;margin-right:4px"')}每${esc(wdsTxt(x.wds))} ${x.last.start}–${x.last.end}</b><span>已上 ${x.done.length} · 待上 ${x.up.length} · ${x.up.length?'排到 '+x.last.date:'已于 '+x.last.date+' 结束'}${x.last.venue?' · '+esc(x.last.venue):''}</span></span>
+      <span class="inline" style="flex-wrap:nowrap"><button class="btn sm" data-act="extendSeries" data-sid="${x.sid}">续排 8 周</button>${x.up.length?`<button class="btn sm danger" data-act="endSeries" data-sid="${x.sid}" data-orig="结束">结束</button>`:''}</span></div>`).join('')}</div>`:''}
+    ${up.length?`<div class="section-t">接下来</div><div class="mini">${up.map(mini).join('')}</div>`:''}
+    <div class="section-t">按月历史</div>${months.length?`<div class="mini tbl-wrap"><table><thead><tr><th>月份</th><th class="n">节数</th><th class="n">小时</th><th class="n">课酬</th><th class="n">收款</th></tr></thead><tbody>${months.map(r=>`<tr><td>${ymTxt(r.ym)}${r.his?' <span class="chip">补录</span>':''}${r.up?` <span class="chip acc">待上 ${r.up}</span>`:''}</td><td class="n">${r.n}</td><td class="n">${hrsTxt(r.h)}</td><td class="n">${money(r.fee)}</td><td class="n">${r.paid?money(r.paid):'—'}</td></tr>`).join('')}
+      <tr class="tot"><td>合计</td><td class="n">${s.count}</td><td class="n">${hrsTxt(s.hrs)}</td><td class="n">${money(s.due)}</td><td class="n">${money(s.paid)}</td></tr></tbody></table></div>`:'<div class="hint">还没有上课记录。以前教过的，可以点“补录以往上课”。</div>'}
+    ${s.hs.length?`<div class="section-t">补录记录</div><div class="mini">${s.hs.slice().sort((a,b)=>b.ym.localeCompare(a.ym)).map(h=>`<button class="row" data-act="editHistory" data-id="${h.id}"><span class="tm num">${ymTxt(h.ym)}</span><span class="mid"><span>${h.count} 节 · ${hrsTxt(+h.hours||0)} 小时${h.note?' · '+esc(h.note):''}</span></span><span class="amt">${money(h.fee)}</span></button>`).join('')}</div>`:''}
+    <div class="section-t"><span>上过的课 ${pastAll.length} 节</span><span class="sp"></span>${pastAll.length>8&&!detailAll?`<button class="btn sm" data-act="detailAll" data-id="${c.id}">全部显示</button>`:''}</div>${past.length?`<div class="mini">${past.map(mini).join('')}</div>`:'<div class="hint">在这个工具里还没有上过课。</div>'}
+    <div class="section-t">收款记录</div>${ps.length?`<div class="mini">${ps.map(p=>`<button class="row" data-act="editPay" data-id="${p.id}"><span class="tm num">${p.date}</span><span class="mid"><span>${esc(p.method||'')}${+p.lessons>0?` · 课时包 ${p.lessons} 节`:''}${p.note?' · '+esc(p.note):''}</span></span><span class="amt">${money(p.amount)}</span></button>`).join('')}</div>`:'<div class="hint">还没有收款记录。</div>'}`,
+  sheet=>{
+    sheet.querySelectorAll('[data-act=endSeries]').forEach(b=>{
+      b.removeAttribute('data-act');
+      b.addEventListener('click',e=>{
+        const x=ser.find(z=>z.sid===b.dataset.sid);if(!x)return;
+        armDelete(e.currentTarget,`删掉待上的 ${x.up.length} 节`,()=>{commit(x.up.map(l=>['del','lessons',l.id]));toast(`固定课已结束，删掉了 ${x.up.length} 节待上的课`);openClientDetail(c.id);});
+      });
+    });
+  });
+}
+function extendSeries(sid,weeks){
+  const x=seriesList().find(z=>z.sid===sid);if(!x)return;
+  const ops=[],now=new Date().toISOString();
+  const today=ymd(new Date());
+  x.wds.forEach(w=>{
+    const tpl=x.ls.filter(l=>wdIdx(l.date)===w).pop();
+    let d=parseYmd(tpl.date);
+    for(let i=0;i<weeks;i++){
+      d=addDays(d,7);
+      while(ymd(d)<today)d=addDays(d,7);
+      const o=Object.assign({},tpl,{id:uid()+w+'_'+i,date:ymd(d),status:'normal',note:'',created:now});delete o.demo;
+      if(tpl.demo)o.demo=true;
+      ops.push(['put','lessons',o]);
+    }
+  });
+  commit(ops);toast(`已续排 ${ops.length} 节`);
+}
+
+function openPayForm(opt){
+  opt=opt||{};
+  const p=opt.id?S.payments.get(opt.id):null;
+  const cs=clientsArr();
+  if(!p&&!cs.length){toast('先添加一个学员或机构');openClientForm();return;}
+  const c0=client(opt.client)||cs[0];
+  const v=p?Object.assign({},p):{clientId:c0.id,date:ymd(new Date()),amount:opt.amount?r2(+opt.amount):'',method:c0.type==='org'?'机构结算':'微信',lessons:'',note:''};
+  openSheet(`${sheetHead(p?'编辑收款':'记一笔收款')}
+    <div class="field"><label for="p-client">付款人</label><select id="p-client">${clientOptions(v.clientId,v.clientId)}</select></div>
+    <div class="row2"><div class="field"><label for="p-amount">金额（元）</label><input id="p-amount" inputmode="decimal" value="${v.amount}" placeholder="0"></div>
+      <div class="field"><label for="p-date">日期</label><input type="date" id="p-date" value="${v.date}"></div></div>
+    <div class="field"><span class="lbl">方式</span><div class="seg" role="group" id="p-method">${METHODS.map(m=>`<button type="button" data-m="${m}" aria-pressed="${v.method===m}">${m}</button>`).join('')}</div></div>
+    <div class="field"><label for="p-lessons">课时包节数（可不填）</label><input id="p-lessons" inputmode="numeric" value="${v.lessons||''}" placeholder="例如买 10 节课就填 10"><span class="hint">填了之后学员卡片会显示剩余课时。</span></div>
+    <div class="field"><label for="p-note">备注</label><input id="p-note" value="${esc(v.note||'')}" placeholder="例如：10月课时费"></div>
+    <div class="actions">${p?'<button class="btn danger" id="p-del" data-orig="删除">删除</button>':''}<span class="sp"></span><button class="btn" data-act="close">取消</button><button class="btn primary" id="p-save">保存</button></div>`,
+  sheet=>{
+    const g=x=>sheet.querySelector('#'+x);let method=v.method;
+    segBind(g('p-method'),'m',x=>method=x);
+    g('p-save').addEventListener('click',()=>{
+      const amount=r2(parseFloat(g('p-amount').value)||0);if(!amount){toast('请填写金额');g('p-amount').focus();return;}
+      const o=Object.assign({},p||{id:uid(),created:new Date().toISOString()},{clientId:g('p-client').value,date:g('p-date').value||ymd(new Date()),amount,method,lessons:parseInt(g('p-lessons').value)||0,note:g('p-note').value.trim()});
+      put('payments',o);closeSheet();toast('已记录 '+money(amount));
+    });
+    if(g('p-del'))g('p-del').addEventListener('click',e=>armDelete(e.currentTarget,'确认删除',()=>{commit([['del','payments',p.id]]);closeSheet();toast('已删除');}));
+  });
+}
+
+/* ---------- reminders (calendar export) ---------- */
+function icsEsc(s){return String(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');}
+function icsFold(line){
+  const enc=new TextEncoder();const out=[];let cur='',bytes=0;
+  for(const ch of line){const b=enc.encode(ch).length;if(bytes+b>(out.length?74:75)){out.push(cur);cur='';bytes=0;}cur+=ch;bytes+=b;}
+  out.push(cur);return out.join('\r\n ');
+}
+const icsUtc=d=>d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+function buildIcs(prefs){
+  const now=new Date(),limit=addDays(now,7*prefs.weeks);
+  const list=lessons().filter(l=>l.status!=='cancelled'&&lessonEndTs(l)>now.getTime()&&parseYmd(l.date)<=limit).sort(byTime);
+  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//yuqiu-kebiao//CN','CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:羽球课','X-WR-TIMEZONE:Asia/Shanghai'];
+  const [rh,rm]=prefs.time.split(':').map(Number);
+  list.forEach(l=>{
+    const st=new Date(parseYmd(l.date).getTime()+toMin(l.start)*60000),en=new Date(parseYmd(l.date).getTime()+toMin(l.end)*60000);
+    const remind=addDays(parseYmd(l.date),-1);remind.setHours(rh,rm,0,0);
+    const before=Math.round((st-remind)/60000);
+    const c=client(l.clientId)||{};
+    L.push('BEGIN:VEVENT','UID:'+l.id+'@yuqiu-kebiao','DTSTAMP:'+icsUtc(now),'DTSTART:'+icsUtc(st),'DTEND:'+icsUtc(en),
+      icsFold('SUMMARY:'+icsEsc(`羽毛球课 · ${c.name||''}`)));
+    if(l.venue)L.push(icsFold('LOCATION:'+icsEsc(l.venue)));
+    L.push(icsFold('DESCRIPTION:'+icsEsc(`${isFixed(l)?'固定课':'单次课'} · ${l.start}–${l.end} · 课费 ${money(l.fee)}${l.note?'\n'+l.note:''}`)));
+    if(before>0)L.push('BEGIN:VALARM','ACTION:DISPLAY',icsFold('DESCRIPTION:'+icsEsc(`明天 ${l.start} 有课：${c.name||''}${l.venue?' @ '+l.venue:''}`)),`TRIGGER:-PT${before}M`,'END:VALARM');
+    if(prefs.hourBefore)L.push('BEGIN:VALARM','ACTION:DISPLAY',icsFold('DESCRIPTION:'+icsEsc(`1 小时后上课：${c.name||''}`)),'TRIGGER:-PT60M','END:VALARM');
+    L.push('END:VEVENT');
+  });
+  L.push('END:VCALENDAR');
+  return {text:L.join('\r\n')+'\r\n',n:list.length};
+}
+function openRemind(){
+  const p=remindPrefs();
+  const tm=addDays(new Date(),1),tmN=lessons().filter(l=>l.date===ymd(tm)&&l.status!=='cancelled').length;
+  openSheet(`${sheetHead('手机提醒')}
+    <div class="infobox">把课程导出到手机自带的日历，每节课都会在<b>前一天晚上</b>弹出提醒。提醒由手机日历负责，课表网页关着也照样会提醒。</div>
+    <div class="row2"><div class="field"><label for="r-time">前一天几点提醒</label><input type="time" id="r-time" value="${p.time}"></div>
+      <div class="field"><label for="r-weeks">导出未来几周的课</label><select id="r-weeks">${[4,8,12,26].map(w=>`<option value="${w}" ${w===p.weeks?'selected':''}>${w} 周</option>`).join('')}</select></div></div>
+    <label class="check"><input type="checkbox" id="r-hour" ${p.hourBefore?'checked':''}>上课前 1 小时再提醒一次</label>
+    <button class="btn primary block" id="r-go">${ICON.bell}导出到手机日历</button>
+    <div class="hint" id="r-count"></div>
+    <div class="section-t">怎么导入</div>
+    <ol class="steps">
+      <li><b>iPhone</b>：点上面的按钮，会弹出分享菜单。菜单里有“日历”就直接选；没有的话选“存储到‘文件’”，再打开“文件”App，点这个 .ics 文件，选“添加全部”。</li>
+      <li><b>安卓</b>：在弹出的菜单里选系统自带的日历；如果是直接下载了，就到下载列表里点开这个 .ics 文件，用日历导入。</li>
+      <li>建议在日历里新建一个“羽球课”日历专门放这些课。课表有改动时重新导出一次；如果出现重复的课，删掉这个日历重新导入就行。</li>
+    </ol>
+    <div class="hint">${tmN?`明天有 ${tmN} 节课。`:'明天没有课。'}每次打开课表，首页也会显示今天和明天的课。</div>`,
+  sheet=>{
+    const g=x=>sheet.querySelector('#'+x);
+    const prefs=()=>({time:g('r-time').value||'20:00',weeks:+g('r-weeks').value||8,hourBefore:g('r-hour').checked});
+    const upd=()=>{const pr=prefs();lsSet(REMIND_KEY,JSON.stringify(pr));g('r-count').textContent=`将导出 ${buildIcs(pr).n} 节待上的课（已取消的不导出）。`;};
+    ['r-time','r-weeks','r-hour'].forEach(id=>g(id).addEventListener('change',upd));upd();
+    g('r-go').addEventListener('click',()=>{
+      const r=buildIcs(prefs());
+      if(!r.n){toast('接下来没有要上的课');return;}
+      saveFile(`羽球课-${ymd(new Date())}.ics`,r.text,'text/calendar');
+    });
+  });
+}
+
+function openSettings(){
+  const n=KINDS.map(k=>S[k].size);
+  const syncTxt={ok:'所有修改都已保存到云端',busy:'正在同步…',off:`现在连不上云端，${outbox.size} 条修改先存在这台设备上，联网后自动上传`,err:store.syncMsg||'同步出错',idle:'正在连接…'}[store.sync];
+  let host='';try{host=new URL(CFG.url).host;}catch(e){}
+  openSheet(`${sheetHead('账号与数据')}
+    <div class="inline"><span class="ava c0" style="width:32px;height:32px">${esc((session.user.email||'?').slice(0,1).toUpperCase())}</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis">${esc(session.user.email||'')}</span><button class="btn sm" id="s-logout" data-orig="退出登录">退出登录</button></div>
+    <div class="stat-strip"><div><span>学员 / 机构</span><b>${n[0]}</b></div><div><span>课程</span><b>${n[1]}</b></div><div><span>收款</span><b>${n[2]}</b></div><div><span>补录</span><b>${n[3]}</b></div></div>
+    <div class="inline"><span style="flex:1">${esc(syncTxt)}</span><button class="btn sm" data-act="syncNow">立即同步</button></div>
+    <div class="hint">云端：${esc(host)}${CFG.baked?'':' · <button class="btn sm" data-act="changeCfg" style="height:26px">更换云端</button>'}</div>
+    <div class="section-t">提醒</div>
+    <div class="inline"><button class="btn" data-act="remind">${ICON.bell}手机提醒（导出到日历）</button></div>
+    <div class="section-t">备份</div>
+    <div class="inline"><button class="btn" data-act="exportJson">导出备份（JSON）</button><button class="btn" data-act="importJson">从备份恢复</button></div>
+    <div class="section-t">导出表格（Excel 可打开）</div>
+    <div class="inline"><button class="btn" data-act="exportLessons">课程明细 CSV</button><button class="btn" data-act="exportPays">收款记录 CSV</button></div>
+    <div class="section-t">示例数据</div>
+    <div class="inline">${hasDemo()?'<button class="btn" data-act="clearDemo">清除示例数据</button>':'<button class="btn" data-act="loadDemo">载入示例数据</button>'}</div>
+    <div class="section-t">危险操作</div>
+    <div class="inline"><button class="btn danger" id="s-wipe" data-orig="清空这个账号的全部数据">清空这个账号的全部数据</button></div>`,
+  sheet=>{
+    sheet.querySelector('#s-wipe').addEventListener('click',e=>armDelete(e.currentTarget,'再点一次，全部删除且无法恢复',()=>{
+      const ops=[];KINDS.forEach(k=>S[k].forEach((_,i)=>ops.push(['del',k,i])));commit(ops);closeSheet();toast('已清空');
+    }));
+    sheet.querySelector('#s-logout').addEventListener('click',e=>{
+      if(!outbox.size){signOut();return;}
+      armDelete(e.currentTarget,`还有 ${outbox.size} 条没上传，仍然退出`,()=>signOut());
+    });
+  });
+}
+
+/* ---------- export / import ---------- */
+async function saveFile(name,text,type){
+  // 手机上优先用系统分享菜单（可以直接存到“文件”、发微信、或交给日历打开）
+  if(isMobile()&&navigator.canShare){
+    try{const f=new File([text],name,{type:type||'text/plain'});if(navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return;}}
+    catch(e){if(e&&e.name==='AbortError')return;}
+  }
+  try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:(type||'text/plain')+';charset=utf-8'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);toast('已导出 '+name);}
+  catch(e){toast('导出没有成功，请换个浏览器试试');}
+}
+const csvCell=x=>{x=String(x==null?'':x);return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x;};
+const csv=rows=>'\ufeff'+rows.map(r=>r.map(csvCell).join(',')).join('\n');
+function exportJson(){const d={app:'羽球课表',version:2,exportedAt:new Date().toISOString()};KINDS.forEach(k=>d[k]=[...S[k].values()]);saveFile(`羽球课表备份-${ymd(new Date())}.json`,JSON.stringify(d,null,1),'application/json');}
+function exportLessons(){
+  const rows=[['日期','星期','开始','结束','时长(小时)','学员/机构','类型','课程','场地','状态','课费','成本','备注']];
+  lessons().sort(byTime).forEach(l=>{const c=client(l.clientId)||{};rows.push([l.date,'周'+wdOf(l.date),l.start,l.end,hrsTxt(dur(l)),c.name||'',c.type==='org'?'机构':'私教',isFixed(l)?'固定课':'单次课',l.venue||'',STATE_LABEL[lstate(l)],lstate(l)==='cancelled'?0:l.fee,l.cost||0,l.note||'']);});
+  histories().sort((a,b)=>a.ym.localeCompare(b.ym)).forEach(h=>{const c=client(h.clientId)||{};rows.push([h.ym,'','','',hrsTxt(+h.hours||0),c.name||'',c.type==='org'?'机构':'私教','补录 '+h.count+' 节','','补录',h.fee,0,h.note||'']);});
+  saveFile(`课程明细-${ymd(new Date())}.csv`,csv(rows),'text/csv');
+}
+function exportPays(){
+  const rows=[['日期','付款人','类型','金额','方式','课时包节数','备注']];
+  payments().sort((a,b)=>a.date.localeCompare(b.date)).forEach(p=>{const c=client(p.clientId)||{};rows.push([p.date,c.name||'',c.type==='org'?'机构':'私教',p.amount,p.method||'',p.lessons||'',p.note||'']);});
+  saveFile(`收款记录-${ymd(new Date())}.csv`,csv(rows),'text/csv');
+}
+$('#import-file').addEventListener('change',e=>{
+  const f=e.target.files&&e.target.files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const d=JSON.parse(rd.result);if(!d||!Array.isArray(d.clients))throw 0;
+      const ops=[];KINDS.forEach(k=>(d[k]||[]).forEach(o=>{if(o&&o.id)ops.push(['put',k,o]);}));
+      commit(ops);closeSheet();toast(`已恢复 ${ops.length} 条记录`);
+    }catch(err){toast('这个文件不是羽球课表的备份');}
+    e.target.value='';
+  };
+  rd.readAsText(f);
+});
+
+/* ---------- demo ---------- */
+function loadDemo(){
+  const now=new Date(),ws=weekStart(now),ops=[],D=true;
+  const C=[
+    {name:'示例·小雨（少儿）',type:'student',rate:180,rateUnit:'lesson',dur:60,venue:'奥体中心 3号场',cost:40,color:1,note:'8岁，刚学两个月'},
+    {name:'示例·陈先生（成人提高）',type:'student',rate:240,rateUnit:'hour',dur:90,venue:'星河羽毛球馆 7号场',cost:60,color:3,note:'练后场杀球和步法'},
+    {name:'示例·周家姐弟（双人课）',type:'student',rate:300,rateUnit:'lesson',dur:90,venue:'奥体中心 3号场',cost:40,color:4},
+    {name:'示例·飞羽俱乐部',type:'org',rate:150,rateUnit:'hour',dur:120,venue:'飞羽俱乐部',cost:0,color:0,note:'每月5号前结算上月课时'},
+    {name:'示例·阳光少儿体育',type:'org',rate:200,rateUnit:'lesson',dur:120,venue:'阳光体育馆',cost:0,color:5,note:'周六上午少儿班'},
+    {name:'示例·刘同学（已结课）',type:'student',rate:200,rateUnit:'lesson',dur:90,venue:'星河羽毛球馆 2号场',cost:50,color:6,note:'备考体育中考，已考完',archived:true},
+  ].map(c=>Object.assign({id:uid()+Math.random().toString(36).slice(2,5),demo:D,phone:'',created:now.toISOString()},c));
+  C.forEach(c=>ops.push(['put','clients',c]));
+  const plan=[[0,2,'17:30'],[0,5,'15:00'],[1,0,'19:30'],[2,6,'10:00'],[3,1,'19:00'],[3,3,'19:00'],[4,5,'09:00']];
+  const L=[];
+  for(let w=-9;w<=2;w++)plan.forEach(([ci,wd,st],pi)=>{
+    const c=C[ci],date=ymd(addDays(ws,w*7+wd)),end=fromMin(toMin(st)+c.dur);
+    let status='normal';
+    if((w===-4&&pi===3)||(w===-7&&pi===2))status='cancelled';
+    if(w===-2&&pi===0)status='absent';
+    const notes=['正手高远球','步法：米字步','反手过渡','网前搓球','发球和接发','双打站位','杀球发力'];
+    const o={id:uid()+w+'_'+pi,demo:D,clientId:c.id,date,start:st,end,venue:c.venue,fee:calcFee(c,st,end),cost:c.cost,status,note:c.type==='student'?notes[(w+9+pi)%7]:''};
+    if(pi!==3)o.seriesId='demo-'+pi;   // 周家姐弟是每次单独约的单次课
+    L.push(o);
+  });
+  // 两节临时加的单次课
+  L.push({id:uid()+'x1',demo:D,clientId:C[1].id,date:ymd(addDays(ws,4)),start:'12:30',end:'14:00',venue:C[1].venue,fee:360,cost:60,status:'normal',note:'临时加课：比赛前热身'});
+  L.push({id:uid()+'x2',demo:D,clientId:C[0].id,date:ymd(addDays(ws,-10)),start:'10:00',end:'11:00',venue:C[0].venue,fee:180,cost:40,status:'normal',note:'补课'});
+  L.forEach(l=>ops.push(['put','lessons',l]));
+  const P=[],first=ymd(addDays(ws,-63)),td=ymd(now);
+  const pay=(ci,date,amount,method,lessonsN,note)=>{if(date<=td)P.push({id:uid()+P.length,demo:D,clientId:C[ci].id,date,amount,method,lessons:lessonsN||0,note:note||'',created:now.toISOString()});};
+  pay(0,first,1800,'微信',10,'10节课时包');
+  pay(0,ymd(addDays(ws,-28)),1800,'微信',10,'续费10节');
+  pay(1,ymd(addDays(ws,-62)),1080,'支付宝',0,'');
+  pay(1,ymd(addDays(ws,-35)),1080,'支付宝',0,'');
+  pay(1,ymd(addDays(ws,-14)),360,'现金',0,'');
+  pay(2,ymd(addDays(ws,-57)),2400,'银行转账',8,'双人课8节');
+  pay(2,ymd(addDays(ws,-1)),2400,'微信',8,'续费8节');
+  const curM=ymOf(now);
+  [3,4].forEach(ci=>{
+    const byM={};L.filter(l=>l.clientId===C[ci].id&&l.status!=='cancelled'&&l.date<curM+'-01').forEach(l=>{const m=l.date.slice(0,7);byM[m]=(byM[m]||0)+l.fee;});
+    Object.keys(byM).sort().forEach(m=>{if(ci===4&&m===addMonths(curM,-1))return;const pd=addMonths(m,1)+'-05';pay(ci,pd<=td?pd:td,byM[m],'机构结算',0,`${+m.slice(5)}月课时费`);});
+  });
+  P.forEach(p=>ops.push(['put','payments',p]));
+  // 补录：用工具之前的情况
+  const H=[];
+  const his=(ci,back,count,paidAll,note)=>{const c=C[ci];const fee=count*(c.rateUnit==='hour'?c.rate*c.dur/60:c.rate);H.push({id:uid()+'h'+H.length,demo:D,clientId:c.id,ym:addMonths(curM,-back),count,hours:r2(count*c.dur/60),fee,paid:paidAll?fee:fee-200,note:note||'',created:now.toISOString()});};
+  for(let b=8;b>=3;b--)his(5,b,b===3?4:8,true,b===8?'第一次上课':'');
+  his(0,4,6,true,'之前在别的场馆上的');
+  his(3,5,12,true,'');his(3,4,14,false,'');
+  H.forEach(h=>ops.push(['put','history',h]));
+  commit(ops);closeSheet();toast('已载入示例数据');
+}
+function clearDemo(){const ops=[];KINDS.forEach(k=>S[k].forEach(o=>{if(o.demo)ops.push(['del',k,o.id]);}));commit(ops);closeSheet();toast('示例数据已清除');}
+
+/* ---------- toast ---------- */
+let tt=0;
+function toast(msg){const r=$('#toast-root');r.innerHTML=`<div class="toast" role="status">${esc(msg)}</div>`;clearTimeout(tt);tt=setTimeout(()=>{r.innerHTML='';},2600);}
+
+/* ---------- events ---------- */
+const A={
+  go:t=>{ui.view=t.dataset.v;saveUi();render();window.scrollTo(0,0);},
+  wk:t=>{const d=+t.dataset.d;ui.ws=d?addDays(ui.ws,d):weekStart(new Date());render();},
+  mode:t=>{ui.mode=t.dataset.m;saveUi();render();},
+  filter:t=>{ui.filter=t.dataset.f;render();},
+  mon:t=>{const d=+t.dataset.d;ui.month=d?addMonths(ui.month,d):ymOf(new Date());render();},
+  yr:t=>{const d=+t.dataset.d;ui.year=d?ui.year+d:new Date().getFullYear();render();},
+  statMode:t=>{ui.statMode=t.dataset.m;if(ui.statMode==='year')ui.year=+ui.month.slice(0,4);saveUi();render();},
+  pickMonth:t=>{ui.month=t.dataset.ym;ui.statMode='month';saveUi();render();window.scrollTo(0,0);},
+  slot:(t,e)=>{
+    if(t.dataset.start){openLessonForm({date:t.dataset.date,start:t.dataset.start});return;}
+    const r=t.getBoundingClientRect(),y=e.clientY-r.top;
+    const m=Math.floor(((ui._sH||8)*60+y/(ui._H||46)*60)/30)*30;
+    openLessonForm({date:t.dataset.date,start:fromMin(Math.max(0,Math.min(m,23*60)))});
+  },
+  editLesson:t=>openLessonForm({id:t.dataset.id}),
+  newLessonFor:t=>openLessonForm({clientId:t.dataset.client,date:ymd(new Date())}),
+  clientDetail:t=>openClientDetail(t.dataset.id),
+  detailAll:t=>openClientDetail(t.dataset.id,true),
+  editClient:t=>openClientForm(t.dataset.id),
+  newClient:()=>openClientForm(),
+  newHistory:t=>openHistoryForm({client:t.dataset.client}),
+  editHistory:t=>openHistoryForm({id:t.dataset.id}),
+  extendSeries:t=>{const x=seriesList().find(z=>z.sid===t.dataset.sid);extendSeries(t.dataset.sid,8);if(x)openClientDetail(x.clientId);},
+  newPay:t=>openPayForm({client:t.dataset.client,amount:t.dataset.amount}),
+  editPay:t=>openPayForm({id:t.dataset.id}),
+  fab:()=>{if(ui.view==='week'){const today=new Date();const inWeek=today>=ui.ws&&today<addDays(ui.ws,7);openLessonForm({date:inWeek?ymd(today):ymd(ui.ws)});}else if(ui.view==='clients')openClientForm();else if(ui.view==='pay')openPayForm();},
+  settings:()=>{if(store.mode==='app')openSettings();},
+  remind:()=>openRemind(),
+  close:()=>closeSheet(),
+  loadDemo:()=>loadDemo(),
+  clearDemo:()=>clearDemo(),
+  exportJson:()=>exportJson(),
+  exportLessons:()=>exportLessons(),
+  exportPays:()=>exportPays(),
+  importJson:()=>$('#import-file').click(),
+  authTab:t=>{const em=$('#a-email');if(em&&em.value.trim())lsSet('yuqiu-last-email',em.value.trim());authTab=t.dataset.t;render();},
+  syncNow:()=>{store.pulled?flush().then(pull):pull();},
+  changeCfg:()=>{lsSet(CFG_KEY,null);CFG=null;session=null;lsSet(SESS_KEY,null);store.mode='setup';closeSheet();render();},
+  legacyUp:()=>{const lg=legacy();if(!lg)return;const ops=[];KINDS.forEach(k=>(lg.d[k]||[]).forEach(o=>{if(o&&o.id)ops.push(['put',k,o]);}));commit(ops);lsSet(LEGACY_KEY,null);toast(`已把 ${ops.length} 条记录存到你的账号`);},
+  legacyNo:()=>{lsSet(LEGACY_NO,'1');render();},
+  install:async()=>{if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice;}catch(e){}installEvt=null;render();},
+  installNo:()=>{lsSet('yuqiu-install-no','1');render();}
+};
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-act]');if(!t)return;
+  const fn=A[t.dataset.act];if(fn){fn(t,e);}
+});
+document.addEventListener('change',e=>{if(e.target.id==='show-arc'){ui.showArchived=e.target.checked;render();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#sheet-root').firstChild)closeSheet();});
+let lastW=window.innerWidth;
+window.addEventListener('resize',()=>{if((lastW<860)!==(window.innerWidth<860)){lastW=window.innerWidth;scheduleRender();}});
+setInterval(()=>{if(!$('#sheet-root').firstChild)scheduleRender();},60000);
+window.addEventListener('online',()=>{if(store.mode==='app')(store.pulled?flush():pull());});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&store.mode==='app'&&Date.now()-store.lastPull>30000)pull();});
+setInterval(()=>{if(store.mode==='app'&&document.visibilityState==='visible'&&!$('#sheet-root').firstChild)pull();},180000);
+
+function boot(){
+  if(!CFG){store.mode='setup';render();return;}
+  try{session=JSON.parse(lsGet(SESS_KEY)||'null');}catch(e){session=null;}
+  if(session&&session.user&&session.user.id&&session.refresh_token)enterApp();
+  else{session=null;store.mode='auth';render();}
+}
+boot();
+// iPhone 的 Safari 不理会 user-scalable=no，这里直接拦掉双指缩放
+['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
+document.addEventListener('touchmove',e=>{if(e.touches&&e.touches.length>1)e.preventDefault();},{passive:false});
+// 发现 Netlify 标签后给页面留出底部空间
+(function(){
+  const check=()=>{const on=!!document.getElementById('nl-badge-frame');document.body.classList.toggle('nl-badge',on);return on;};
+  if(check())return;
+  const mo=new MutationObserver(()=>{if(check())mo.disconnect();});
+  mo.observe(document.body,{childList:true});
+  setTimeout(()=>mo.disconnect(),15000);
+})();
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+})();
+</script>
+</body>
+</html>

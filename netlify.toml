@@ -1,0 +1,4 @@
+# Netlify 部署设置：网站就是这个文件夹本身，不需要构建
+[build]
+  publish = "."
+  command = ""
