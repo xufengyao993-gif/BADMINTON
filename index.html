@@ -85,30 +85,47 @@ h3{font-size:15px}
 .icon-btn:hover{background:var(--surface-2)}
 .icon-btn svg{width:20px;height:20px}
 
-.app{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom,0px))}
-.bnav{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
+.app{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px calc(var(--nav-h) + 24px + env(safe-area-inset-bottom,0px))}
+.bnav{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
 .bnav button{height:var(--nav-h);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11.5px;color:var(--muted);font-weight:600}
 .bnav svg{width:22px;height:22px}
 .bnav button[aria-current="page"]{color:var(--accent)}
-.fab{position:fixed;z-index:31;right:calc(max(16px,env(safe-area-inset-right,0px)) + 4px);bottom:calc(var(--nav-h) + 16px + env(safe-area-inset-bottom,0px));height:52px;padding:0 20px 0 16px;border-radius:999px;background:var(--accent);color:var(--accent-fg);display:flex;align-items:center;gap:6px;font-weight:700;box-shadow:0 6px 18px -6px color-mix(in oklab,var(--accent) 70%,transparent)}
-.fab svg{width:22px;height:22px}
+/* 底部导航中间的“＋”：在课表页是排课、学员页是新建学员、收费页是记收款 */
+.bnav .add{color:var(--accent)}
+.bnav .add .plus{width:40px;height:26px;border-radius:999px;background:var(--accent);color:var(--accent-fg);display:grid;place-items:center;box-shadow:0 4px 12px -5px color-mix(in oklab,var(--accent) 80%,transparent)}
+.bnav .add .plus svg{width:20px;height:20px}
+.btn.top-add{display:none}
 /* Netlify 免费版会在右下角固定放一个“Powered by Netlify”标签（大约占底部 50px），
-   出现时把导航栏、按钮和提示整体抬高，让标签待在导航栏下方的空白里 */
+   出现时把导航栏和提示整体抬高，让标签待在导航栏下方的空白里 */
 body.nl-badge{--badge-h:52px}
 body.nl-badge .bnav{padding-bottom:max(var(--badge-h),env(safe-area-inset-bottom,0px))}
-body.nl-badge .fab{bottom:calc(var(--nav-h) + 16px + max(var(--badge-h),env(safe-area-inset-bottom,0px)))}
-body.nl-badge .app{padding-block-end:calc(var(--nav-h) + 96px + max(var(--badge-h),env(safe-area-inset-bottom,0px)))}
-body.nl-badge .toast{bottom:calc(var(--nav-h) + 84px + max(var(--badge-h),env(safe-area-inset-bottom,0px)))}
+body.nl-badge .app{padding-block-end:calc(var(--nav-h) + 24px + max(var(--badge-h),env(safe-area-inset-bottom,0px)))}
+body.nl-badge .toast{bottom:calc(var(--nav-h) + 16px + max(var(--badge-h),env(safe-area-inset-bottom,0px)))}
 body.nl-badge .sheet{padding-bottom:calc(20px + max(var(--badge-h),env(safe-area-inset-bottom,0px)))}
+@media (max-width:859px){:root{--nav-h:56px;--top-h:50px}}
 @media (min-width:860px){
-  body.nl-badge .fab{bottom:calc(28px + var(--badge-h))}
-  body.nl-badge .app{padding-block-end:calc(120px + var(--badge-h))}
-  body.nl-badge .toast{bottom:calc(96px + var(--badge-h))}
+  body.nl-badge .app{padding-block-end:calc(24px + var(--badge-h))}
+  body.nl-badge .toast{bottom:calc(28px + var(--badge-h))}
   .tabs{display:flex}
   .bnav{display:none}
-  .app{padding-block:18px 120px}
-  .fab{bottom:calc(28px + env(safe-area-inset-bottom,0px))}
+  .btn.top-add{display:inline-flex;height:36px;background:var(--hi);border-color:var(--hi);color:#0B2D63}
+  .top-add svg{width:18px;height:18px}
+  .app{padding-block:18px 24px}
 }
+
+/* 一屏布局：打开后页面本身不上下滚动，内容按屏幕高度排好；
+   屏幕实在太矮（比如小屏手机在浏览器里打开）时，才退回整页滚动 */
+html.fit{padding-bottom:0;height:100%;overflow:hidden}
+html.fit body{height:calc(100vh - env(safe-area-inset-top,0px));height:calc(100dvh - env(safe-area-inset-top,0px));min-height:0;display:flex;flex-direction:column;overflow:hidden}
+html.fit .top{position:relative;top:auto;flex:none}
+html.fit body .app{flex:1;min-height:0;width:100%;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;padding-block:10px}
+html.fit .view{flex:1;min-height:0;gap:10px}
+html.fit .view>*{flex:none}
+html.fit .view>.grow{flex:1 1 0;min-height:var(--min-h,180px)}
+html.fit .bnav{position:static;flex:none}
+@media (min-width:860px){html.fit body .app{padding-block:16px 20px}html.fit .view{gap:12px}}
+.col{display:flex;flex-direction:column;min-height:0}
+.scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain}
 
 /* generic pieces */
 .view{display:flex;flex-direction:column;gap:16px}
@@ -133,7 +150,7 @@ body.nl-badge .sheet{padding-bottom:calc(20px + max(var(--badge-h),env(safe-area
 .seg.big button small{font-weight:500;font-size:12px;color:var(--muted)}
 .seg.big button[aria-pressed="true"]{box-shadow:0 0 0 2px var(--accent)}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
-.panel-h{display:flex;align-items:center;gap:10px;padding:14px 16px 6px;flex-wrap:wrap}
+.panel-h{display:flex;align-items:center;gap:8px 10px;padding:10px 14px 6px;flex-wrap:wrap}
 .panel-h .sp{flex:1}
 .chip{display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:600;background:var(--surface-2);color:var(--muted);white-space:nowrap}
 .chip.good{background:color-mix(in oklab,var(--good) 15%,var(--surface));color:var(--good)}
@@ -146,38 +163,65 @@ body.nl-badge .sheet{padding-bottom:calc(20px + max(var(--badge-h),env(safe-area
 .empty{padding:28px 20px;text-align:center;color:var(--muted)}
 .empty h3{color:var(--fg);margin-bottom:6px;font-size:17px}
 .empty .bar-row{justify-content:center;margin-top:14px}
-.banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-radius:12px;background:color-mix(in oklab,var(--hi) 22%,var(--surface));color:var(--fg);font-size:13.5px}
+.banner{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;padding:6px 8px 6px 12px;border-radius:12px;background:color-mix(in oklab,var(--hi) 22%,var(--surface));color:var(--fg);font-size:12.5px;line-height:1.4}
+.banner .btn.sm{height:28px}
 .banner .sp{flex:1}
 .c0{--cc:var(--c0)}.c1{--cc:var(--c1)}.c2{--cc:var(--c2)}.c3{--cc:var(--c3)}.c4{--cc:var(--c4)}.c5{--cc:var(--c5)}.c6{--cc:var(--c6)}.c7{--cc:var(--c7)}
 
-/* upcoming card */
-.soon{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:0;overflow:hidden}
-.soon>div{padding:12px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
-.soon>div+div{border-left:1px solid var(--line-soft)}
-@media (max-width:600px){.soon>div+div{border-left:0;border-top:1px solid var(--line-soft)}}
-.soon-h{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px}
+/* 今日点名 + 明天（课表页顶部） */
+.tdy{display:grid;grid-template-columns:minmax(0,1fr);overflow:hidden}
+.tdy>div{padding:8px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.soon-h{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;min-height:24px}
 .soon-h .sp{flex:1}
-.soon-h .num{font-size:15px;color:var(--muted);font-weight:600}
-.soon-i{display:flex;align-items:center;gap:10px;font-size:14px;text-align:left;width:100%;min-width:0}
-.soon-i .num{font-size:16px;width:46px;flex:none;font-weight:600}
+.soon-h small{font-weight:500;color:var(--muted);font-size:12.5px}
+.soon-h .num{font-size:14px;color:var(--muted);font-weight:600}
+.soon-h .num.warn{color:var(--warn)}
+.soon-i{display:flex;align-items:center;gap:10px;font-size:14px;text-align:left;width:100%;min-width:0;padding:3px 0}
+.soon-i .num{font-size:15px;width:44px;flex:none;font-weight:600}
 .soon-i span:last-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
 .soon-i b{color:var(--fg)}
-.soon .none{color:var(--muted);font-size:13.5px}
-.soon .tmr .soon-h{color:var(--navy)}
+.tdy .none{color:var(--muted);font-size:13.5px}
+.tdy .tmr .soon-h{color:var(--navy)}
+.tdy .tmr-full{display:none}
+/* 手机上“明天”压成一行，点一下看提醒设置 */
+.tmr-line{display:flex;align-items:center;gap:6px;width:100%;text-align:left;font-size:13px;color:var(--muted);min-width:0;min-height:26px}
+.tmr-line svg{width:14px;height:14px;flex:none;color:var(--navy)}
+.tmr-line b{color:var(--navy);flex:none}
+.tmr-line span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tmr-line i{font-style:normal;flex:none;color:var(--navy);font-weight:600;font-size:12.5px}
+.tdy>.tmr{border-top:1px solid var(--line-soft);padding-block:5px}
+@media (min-width:860px){
+  .tdy{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .tdy>.tmr{border-top:0;border-left:1px solid var(--line-soft);padding-block:8px}
+  .tdy .tmr-full{display:flex;flex-direction:column;gap:2px}
+  .tdy .tmr-line{display:none}
+}
+/* 历史未点名：一行提示条，点开在弹窗里逐个点名 */
+.odbar{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:7px 12px;border-radius:12px;font-size:13.5px;
+  background:color-mix(in oklab,var(--warn) 13%,var(--surface));border:1px solid color-mix(in oklab,var(--warn) 40%,var(--line));color:var(--fg)}
+.odbar svg{width:16px;height:16px;flex:none;color:var(--warn)}
+.odbar b{color:var(--warn)}
+.odbar .sp{flex:1}
+.odbar small{color:var(--muted);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.odbar i{font-style:normal;font-weight:700;color:var(--warn);white-space:nowrap}
 
 /* week header */
-.wk-nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.wk-nav{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;min-width:0}
 .wk-title{display:flex;flex-direction:column;line-height:1.15;min-width:0;padding:0 4px}
-.wk-title b{font-family:var(--font-num);font-size:24px;font-weight:700;letter-spacing:.01em;white-space:nowrap}
+.wk-title b{font-family:var(--font-num);font-size:22px;font-weight:700;letter-spacing:.01em;white-space:nowrap}
+button.wk-title{text-align:left;border-radius:8px}
+button.wk-title small{color:var(--accent);font-weight:600}
+@media (max-width:420px){.wk-title b{font-size:19px}.wk-nav{gap:2px}.wk-nav .icon-btn{width:34px}}
 .wk-title small{font-size:12px;color:var(--muted)}
 .wk-nav .sp{flex:1}
 
 /* timetable */
-.tt{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:clip}
+.tt{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:clip;display:flex;flex-direction:column}
+.tt-body{flex:1;min-height:0}
 .tt-row{display:grid;grid-template-columns:38px repeat(7,minmax(0,1fr))}
-.tt-days{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--top-h));z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
-.tt-day{display:flex;flex-direction:column;align-items:center;padding:8px 0 7px;gap:1px;font-size:12px;color:var(--muted);border-left:1px solid var(--line-soft)}
-.tt-day b{font-family:var(--font-num);font-size:19px;font-weight:600;color:var(--fg);line-height:1.1;min-width:28px;text-align:center;border-radius:8px;padding:1px 4px}
+.tt-days{z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.tt-day{display:flex;flex-direction:column;align-items:center;padding:5px 0 4px;gap:0;font-size:12px;color:var(--muted);border-left:1px solid var(--line-soft)}
+.tt-day b{font-family:var(--font-num);font-size:17px;font-weight:600;color:var(--fg);line-height:1.1;min-width:28px;text-align:center;border-radius:8px;padding:1px 4px}
 .tt-day.today{color:var(--accent);font-weight:700}
 .tt-day.today b{background:var(--accent);color:var(--accent-fg)}
 .tt-day.tmr b{box-shadow:inset 0 0 0 1.5px var(--navy)}
@@ -185,60 +229,65 @@ body.nl-badge .sheet{padding-bottom:calc(20px + max(var(--badge-h),env(safe-area
 .tt-axis{position:relative}
 .tt-axis span{position:absolute;right:6px;transform:translateY(-50%);font-family:var(--font-num);font-size:12.5px;color:var(--muted)}
 .tt-col{position:relative;border-left:1px solid var(--line-soft);cursor:cell;
-  background-image:repeating-linear-gradient(to bottom,transparent 0 calc(var(--h) - 1px),var(--line-soft) calc(var(--h) - 1px) var(--h))}
+  background-image:linear-gradient(to bottom,var(--line-soft) 1px,transparent 1px);background-size:100% calc(100% / var(--rows))}
 .tt-col.weekend{background-color:color-mix(in oklab,var(--surface-2) 45%,transparent)}
 .tt-col.today{background-color:color-mix(in oklab,var(--accent) 6%,transparent)}
-.lz{position:absolute;margin:1px 2px;border-radius:8px;padding:4px 5px;font-size:12px;line-height:1.25;overflow:hidden;text-align:left;display:flex;flex-direction:column;gap:1px;
+.lz{position:absolute;margin:1px 2px;border-radius:7px;padding:3px 4px;font-size:12px;line-height:1.2;overflow:hidden;text-align:left;display:flex;flex-direction:column;gap:0;min-height:18px;container-type:size;
   background:color-mix(in oklab,var(--cc) 19%,var(--surface));border:1px solid color-mix(in oklab,var(--cc) 42%,transparent);color:var(--fg);cursor:pointer}
 .lz:hover{background:color-mix(in oklab,var(--cc) 30%,var(--surface))}
 .lz b{font-weight:700;color:color-mix(in oklab,var(--cc) 62%,var(--fg));word-break:break-all;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
 .lz .t{font-family:var(--font-num);font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:2px}
 .lz .t svg{width:11px;height:11px;flex:none;color:color-mix(in oklab,var(--cc) 70%,var(--fg))}
+.lz .t{white-space:nowrap}
 .lz .v{color:var(--muted);font-size:11px;word-break:break-all}
 .lz.single{border-style:dashed;border-width:1.5px}
 .lz.done{background:color-mix(in oklab,var(--cc) 10%,var(--surface))}
 .lz.done b{color:color-mix(in oklab,var(--cc) 45%,var(--muted))}
 .lz.cancelled{background:repeating-linear-gradient(135deg,var(--surface) 0 6px,var(--surface-2) 6px 12px);border-style:dashed;border-color:var(--line)}
 .lz.cancelled b{color:var(--muted);text-decoration:line-through}
-.lz .flag{position:absolute;right:4px;top:4px;width:14px;height:14px;color:var(--good)}
+.lz .flag{position:absolute;right:3px;top:3px;width:13px;height:13px;color:var(--good)}
+/* 课块很矮时（屏幕小、课时短）只留名字 */
+@container (max-height:30px){.lz .t{display:none}}
+@container (max-height:50px){.lz .v{display:none}}
 .lz.absent .flag{color:var(--bad)}
 .lz.pending{border:1.5px dashed var(--warn)}
 .lz.pending .flag{color:var(--warn)}
 .lz.free .flag{color:var(--navy)}
 /* 点名 */
 .rc-list{display:flex;flex-direction:column}
-.rc{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 8px;padding:8px 0;border-top:1px solid var(--line-soft)}
+.rc{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 8px;padding:4px 0;border-top:1px solid var(--line-soft)}
 .rc:first-child{border-top:0}
 .rc-main{display:flex;align-items:center;gap:10px;min-width:0;text-align:left}
 .rc-main .num{font-size:15px;font-weight:600;flex:none}
-.rc-nm{display:flex;flex-direction:column;min-width:0;line-height:1.3}
+.rc-nm{display:flex;flex-direction:column;min-width:0;line-height:1.25}
 .rc-nm b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
 .rc-nm small{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rc-act{display:flex;gap:6px;align-items:center}
 .rc-opts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px}
-.overdue{border-color:color-mix(in oklab,var(--warn) 50%,var(--line));padding:12px 16px;display:flex;flex-direction:column;gap:6px}
-.overdue .soon-h{color:var(--warn)}
 .navdot{display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--bad);color:#fff;font-size:10.5px;font-weight:700;line-height:1}
 .bnav button{position:relative}
 .bnav .navdot{position:absolute;top:7px;left:calc(50% + 6px)}
 .tabs .navdot{margin-left:6px;vertical-align:1px}
 .now{position:absolute;left:-1px;right:0;height:2px;background:var(--navy);z-index:3;pointer-events:none}
 .now::before{content:"";position:absolute;left:-4px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--hi);box-shadow:0 0 0 2px var(--navy)}
-@media (max-width:560px){.lz .v{display:none}.lz{padding:3px 3px}.lz .t{font-size:11.5px}.tt-row{grid-template-columns:32px repeat(7,minmax(0,1fr))}.tt-axis span{font-size:11.5px;right:4px}}
-.wk-sum{display:flex;flex-wrap:wrap;gap:8px 20px;padding:12px 16px;font-size:13.5px;color:var(--muted);border-top:1px solid var(--line-soft)}
-.wk-sum b{font-family:var(--font-num);font-size:18px;color:var(--fg);font-weight:600;margin-right:3px}
+@media (max-width:560px){.lz .v{display:none}.lz{padding:2px;margin:1px}.lz b{font-size:11px;letter-spacing:-.02em}.lz .t{font-size:10.5px}.lz .t svg{display:none}.tt-day{padding:3px 0 2px;font-size:11px}.tt-day b{font-size:15px}.tt-row{grid-template-columns:30px repeat(7,minmax(0,1fr))}.tt-axis span{font-size:11px;right:4px}}
+.wk-sum{display:flex;flex-wrap:nowrap;gap:4px 18px;padding:6px 14px;font-size:13px;color:var(--muted);border-top:1px solid var(--line-soft);white-space:nowrap;overflow:hidden;flex:none}
+.wk-sum b{font-family:var(--font-num);font-size:16px;color:var(--fg);font-weight:600;margin-right:2px}
+@media (max-width:560px){.wk-sum{gap:4px 12px;padding:6px 10px;justify-content:space-between}.wk-sum .xs{display:none}}
 .legend-k{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+@media (max-width:859px){.legend-k{display:none}}
 .legend-k i{display:inline-block;width:18px;height:12px;border-radius:4px;margin-right:5px;vertical-align:-1px;border:1.5px solid var(--muted);background:var(--surface-2)}
 .legend-k i.d{border-style:dashed}
 
 /* list mode */
 .day-group{padding:6px 0}
-.day-h{display:flex;align-items:baseline;gap:8px;padding:10px 16px 4px;font-weight:700}
+.day-h{display:flex;align-items:baseline;gap:8px;padding:8px 14px 3px;font-weight:700}
 .day-h .num{font-size:18px}
 .day-h.today{color:var(--accent)}
-.row{display:flex;align-items:center;gap:12px;padding:10px 16px;text-align:left;width:100%;border-top:1px solid var(--line-soft)}
+.row{display:flex;align-items:center;gap:10px;padding:8px 14px;text-align:left;width:100%;border-top:1px solid var(--line-soft)}
 button.row:hover{background:color-mix(in oklab,var(--surface-2) 50%,transparent)}
-.row .tm{font-family:var(--font-num);font-size:16px;width:92px;flex:none;font-variant-numeric:tabular-nums}
+.row .tm{font-family:var(--font-num);font-size:15px;width:88px;flex:none;font-variant-numeric:tabular-nums}
+.row .tm.s{width:auto;min-width:76px}
 .row .mid{flex:1;min-width:0}
 .row .mid b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row .mid span{font-size:12.5px;color:var(--muted)}
@@ -261,6 +310,23 @@ button.row:hover{background:color-mix(in oklab,var(--surface-2) 50%,transparent)
 .kv b small{font-size:13px;font-family:var(--font-body);font-weight:500}
 .pos{color:var(--good)}.neg{color:var(--bad)}
 .card .next{font-size:12.5px;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+/* 学员页：一行一个，两行信息，右边是余额/欠费和课时 */
+.clist{display:grid;grid-template-columns:minmax(0,1fr);align-content:start;overflow-y:auto;overscroll-behavior:contain}
+.crow{display:flex;align-items:center;gap:10px;padding:7px 12px;text-align:left;width:100%;border-top:1px solid var(--line-soft);min-width:0}
+.crow:first-child{border-top:0}
+.crow:hover{background:color-mix(in oklab,var(--surface-2) 50%,transparent)}
+.crow .ava{width:34px;height:34px}
+.crow .cm{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3}
+.crow .cm b{display:flex;align-items:center;gap:6px;min-width:0;font-size:14.5px}
+.crow .cm b span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.crow .cm b .chip{height:18px;font-size:11px;padding:0 6px}
+.crow .cm small{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crow .cr{display:flex;flex-direction:column;align-items:flex-end;flex:none;line-height:1.3}
+.crow .cr b{font-family:var(--font-num);font-size:16px;font-weight:600;white-space:nowrap}
+.crow .cr small{font-size:12px;color:var(--muted);white-space:nowrap}
+.crow .cr small.neg{color:var(--bad);font-weight:600}
+.crow.arc{opacity:.65}
+@media (min-width:860px){.clist{grid-template-columns:repeat(2,minmax(0,1fr))}.crow:nth-child(2){border-top:0}.crow:nth-child(even){border-left:1px solid var(--line-soft)}}
 
 /* tiles */
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
@@ -274,6 +340,20 @@ button.row:hover{background:color-mix(in oklab,var(--surface-2) 50%,transparent)
 .tile .delta{font-weight:600}
 .tile .delta.up{color:var(--good)}.tile .delta.down{color:var(--bad)}
 .tile.hl .delta.up{color:var(--hi)}.tile.hl .delta.down{color:#FFB4A8}
+.tiles.cmp{gap:8px}
+.tiles.cmp .tile{padding:8px 12px;gap:0}
+.tiles.cmp .tile b{font-size:23px}
+.tiles.cmp .tile small{line-height:1.35}
+@media (max-width:560px){
+  .tiles.cmp{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tiles.cmp.t3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .tiles.cmp.t3 .tile:first-child{grid-column:auto}
+  .tiles.cmp .tile{padding:6px 10px}
+  .tiles.cmp .tile span{font-size:11.5px;letter-spacing:0}
+  .tiles.cmp .tile b{font-size:19px}
+  .tiles.cmp.t3 .tile b{font-size:16.5px}
+  .tiles.cmp .tile small{font-size:11.5px}
+}
 
 /* chart */
 .chart{padding:8px 12px 12px}
@@ -290,13 +370,21 @@ button.row:hover{background:color-mix(in oklab,var(--surface-2) 50%,transparent)
 .bar.sel .bv,.bar.sel .bl{color:var(--fg);font-weight:700}
 .bar .bl{font-size:12px;color:var(--muted)}
 .bar .bl em{font-style:normal}
-.legend{display:flex;gap:14px;font-size:12.5px;color:var(--muted);padding:0 16px;flex-wrap:wrap}
+.legend{display:flex;gap:14px;font-size:12.5px;color:var(--muted);padding:0 14px;flex-wrap:wrap}
+/* 统计页的柱状图跟着剩余高度伸缩 */
+.chart.fill{flex:1;min-height:0;display:flex;flex-direction:column;padding:4px 10px 8px}
+.chart.fill .bars{flex:1;min-height:0;align-items:stretch;grid-template-rows:minmax(0,1fr)}
+.chart.fill .bar{justify-content:flex-end}
+.chart.fill .bar .stack{flex:1;height:auto;min-height:40px}
+.statpane{flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain}
+.panel-h .seg button{height:30px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 @media (max-width:560px){.bar:not(.sel) .bv{visibility:hidden}.bars{gap:2px}.bar .bl{font-size:11px}.bar .bl em{display:none}.tiles.t3 .tile:first-child{grid-column:1/-1}}
 .tbl-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:14px}
-th{font-size:12px;font-weight:600;color:var(--muted);text-align:left;padding:8px 16px;border-bottom:1px solid var(--line);white-space:nowrap}
-td{padding:9px 16px;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+th{font-size:12px;font-weight:600;color:var(--muted);text-align:left;padding:7px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:7px 14px;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+@media (max-width:560px){th{padding:6px 8px}td{padding:6px 8px}td.n{font-size:14px}th:first-child,td:first-child{padding-left:12px}}
 td.n,th.n{text-align:right;font-family:var(--font-num);font-variant-numeric:tabular-nums;font-size:15px}
 th.n{font-family:var(--font-body);font-size:12px}
 tr:last-child td{border-bottom:0}
@@ -304,9 +392,9 @@ tr.tot td{font-weight:700;border-top:1px solid var(--line)}
 tr.click{cursor:pointer}
 tr.click:hover td{background:color-mix(in oklab,var(--surface-2) 50%,transparent)}
 td .inline{flex-wrap:nowrap}
-.share{display:block;height:6px;border-radius:3px;background:var(--surface-2);min-width:60px}
+.share{display:block;height:4px;border-radius:2px;background:var(--surface-2);min-width:60px;margin-top:3px}
 .share i{display:block;height:100%;border-radius:3px;background:var(--cc)}
-.wd{display:grid;grid-template-columns:28px 1fr 64px;gap:6px 10px;align-items:center;padding:6px 16px 14px;font-size:13px}
+.wd{display:grid;grid-template-columns:28px 1fr 64px;gap:10px 10px;align-items:center;padding:10px 16px 14px;font-size:13px}
 .wd .track{height:10px;border-radius:5px;background:var(--surface-2);overflow:hidden}
 .wd .track i{display:block;height:100%;background:var(--navy);border-radius:5px}
 .wd .num{text-align:right;color:var(--muted)}
@@ -315,19 +403,41 @@ td .inline{flex-wrap:nowrap}
 
 /* sheet */
 .sheet-wrap{position:fixed;inset:0;z-index:60;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center}
-.sheet{background:var(--surface);width:100%;max-width:600px;max-height:92%;overflow:auto;border-radius:20px 20px 0 0;
-  padding:18px max(18px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));
-  display:flex;flex-direction:column;gap:14px;animation:up .22s ease-out}
+.sheet{background:var(--surface);width:100%;max-width:600px;max-height:94%;overflow:auto;border-radius:20px 20px 0 0;
+  padding:14px max(18px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));
+  display:flex;flex-direction:column;gap:9px;animation:up .22s ease-out}
+.sheet>*{flex:none}
+/* 学员详情这类内容多的弹窗：固定高度，下面的分页内容自己滚动，标题和按钮一直看得到 */
+.sheet.tall{height:92%}
+.sheet.noanim{animation:none}
+.sheet.tall .pane{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:8px}
+.sheet.tall .pane>*{flex:none}
+.seg.full{display:flex;width:100%}.seg.full button{flex:1}
 @keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.sheet{animation:none}}
 @media (min-width:860px){.sheet-wrap{align-items:center}.sheet{border-radius:20px;max-height:88%}}
 .sheet-h{display:flex;align-items:center;gap:10px}
+.sheet-h h2{font-size:18px}
 .sheet-h h2{flex:1;min-width:0}
-.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+/* 标签放在左边的一行式字段，省掉标签那一行的高度 */
+.fl{display:grid;grid-template-columns:4.6em minmax(0,1fr);align-items:center;gap:4px 8px;min-width:0}
+.fl>.lbl,.fl>label{line-height:1.25;font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+.fl>.hint,.fl>.calc,.fl>.sub{grid-column:2}
+.durs{display:flex;gap:6px;flex-wrap:wrap}
+/* 节数 / 课费 / 场地费 放一行，小标签贴在输入框左边 */
+.fees{display:flex;gap:8px;min-width:0}
+.fi{display:flex;align-items:center;gap:4px;flex:1 1 0;min-width:0}
+.fi[hidden]{display:none}
+.fi label{font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap}
+.fi input{flex:1;min-width:0;padding:0 8px!important}
+.durs .btn.sm{height:28px;padding:0 9px;font-size:13px}
+.tm2{display:flex;align-items:center;gap:6px;min-width:0}
+.tm2 input{flex:1;min-width:0}
 .field>label,.lbl{font-size:12.5px;font-weight:600;color:var(--muted);letter-spacing:.03em}
-.field input,.field select,.field textarea,.inp{font-size:16px;height:42px;border-radius:10px;border:1px solid var(--line);background:var(--bg);padding:0 12px;width:100%;min-width:0}
-.field textarea{height:auto;min-height:64px;padding:10px 12px;resize:vertical}
-.field input:focus,.field select:focus,.field textarea:focus,.inp:focus{outline:2px solid color-mix(in oklab,var(--accent) 60%,transparent);outline-offset:0;border-color:var(--accent)}
+.field input,.field select,.field textarea,.fl input,.fl select,.fl textarea,.inp{font-size:16px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--bg);padding:0 12px;width:100%;min-width:0}
+.field textarea,.fl textarea{height:auto;min-height:40px;padding:8px 12px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus,.fl input:focus,.fl select:focus,.fl textarea:focus,.inp:focus{outline:2px solid color-mix(in oklab,var(--accent) 60%,transparent);outline-offset:0;border-color:var(--accent)}
 .inp.sm{height:36px;width:76px;padding:0 8px}
 .row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .row3{display:grid;grid-template-columns:minmax(0,1.3fr) repeat(2,minmax(0,1fr));gap:10px}
@@ -342,14 +452,19 @@ td .inline{flex-wrap:nowrap}
 .row-fee{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px}
 .calc{font-size:13.5px;color:var(--navy);font-variant-numeric:tabular-nums}
 .calc.warn{color:var(--warn)}
-.fixedbox{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:12px;border:1px solid color-mix(in oklab,var(--accent) 35%,var(--line));background:color-mix(in oklab,var(--accent) 5%,var(--surface))}
+.fixedbox{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:12px;border:1px solid color-mix(in oklab,var(--accent) 35%,var(--line));background:color-mix(in oklab,var(--accent) 5%,var(--surface))}
 .wdpick{display:grid;grid-template-columns:repeat(7,minmax(0,44px));gap:5px}
-.wdpick button{width:100%;height:36px;border-radius:9px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:14px}
+.wdpick button{width:100%;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:14px}
 .wdpick button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 .actions{display:flex;gap:10px;align-items:center;padding-top:4px}
+/* 弹窗里的保存/取消一直贴在底部，不用滑到最下面找 */
+.sheet>.actions{position:sticky;bottom:calc(-20px - env(safe-area-inset-bottom,0px));z-index:2;background:var(--surface);border-top:1px solid var(--line-soft);
+  margin:0 calc(-1 * max(18px,env(safe-area-inset-right,0px))) calc(-20px - env(safe-area-inset-bottom,0px)) calc(-1 * max(18px,env(safe-area-inset-left,0px)));
+  padding:10px max(18px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px))}
 .actions .sp{flex:1}
 .sw{display:flex;gap:8px;flex-wrap:wrap}
-.sw button{width:30px;height:30px;border-radius:50%;background:var(--cc);box-shadow:inset 0 0 0 2px var(--surface)}
+.sw{gap:6px}
+.sw button{width:28px;height:28px;border-radius:50%;background:var(--cc);box-shadow:inset 0 0 0 2px var(--surface)}
 .sw button[aria-pressed="true"]{outline:2px solid var(--cc);outline-offset:2px}
 .check{display:flex;align-items:center;gap:8px;font-size:14px}
 .check input{width:18px;height:18px;accent-color:var(--accent);flex:none}
@@ -357,16 +472,22 @@ td .inline{flex-wrap:nowrap}
 .stat-strip div{display:flex;flex-direction:column;min-width:0}
 .stat-strip span{font-size:11.5px;color:var(--muted)}
 .stat-strip b{font-family:var(--font-num);font-size:18px;font-weight:600;white-space:nowrap}
-@media (max-width:420px){.stat-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat-strip{padding:8px 12px}
+@media (max-width:420px){.stat-strip{padding:7px 10px;gap:6px}.stat-strip b{font-size:15px}.stat-strip span{font-size:11px}}
+.setgrid{display:grid;grid-template-columns:4.2em minmax(0,1fr);gap:10px;align-items:center}
+.setgrid>span{font-size:12.5px;font-weight:700;color:var(--muted);letter-spacing:.04em}
+details.how summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--navy)}
+details.how ol{margin-top:6px}
 .mini{border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .mini .row{border-top:1px solid var(--line-soft);padding:9px 12px}
 .mini .row:first-child{border-top:0}
 .mini .row .tm{width:auto;font-size:14.5px;min-width:96px}
+.mini .row .tm+.mid span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mini table td,.mini table th{padding:8px 12px}
 .section-t{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.06em;margin-top:4px}
 .section-t .sp{flex:1}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) + 84px + env(safe-area-inset-bottom,0px));z-index:80;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;max-width:calc(100% - 32px);box-shadow:0 8px 24px -8px rgba(0,0,0,.4)}
-@media (min-width:860px){.toast{bottom:96px}}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) + 16px + env(safe-area-inset-bottom,0px));z-index:80;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;max-width:calc(100% - 32px);box-shadow:0 8px 24px -8px rgba(0,0,0,.4)}
+@media (min-width:860px){.toast{bottom:28px}}
 .loading{padding:60px 0;text-align:center;color:var(--muted)}
 .auth{min-height:calc(100vh - 160px);display:grid;place-items:center;padding-block:24px}
 .auth-card{width:100%;max-width:420px;padding:24px 22px;display:flex;flex-direction:column;gap:16px}
@@ -384,6 +505,7 @@ ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;f
     </div>
     <nav class="tabs" id="tabs" aria-label="主导航" hidden></nav>
     <div class="sp"></div>
+    <button class="btn primary top-add" id="top-add" data-act="fab" hidden></button>
     <button class="sync" id="sync" data-act="settings" hidden><i></i><span>连接中</span></button>
     <button class="icon-btn" id="set-btn" data-act="settings" aria-label="账号与数据" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </div>
@@ -392,7 +514,6 @@ ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;f
   <main id="view" class="view"><div class="loading">正在打开课表…</div></main>
 </div>
 <nav class="bnav" id="bnav" aria-label="主导航" hidden></nav>
-<button class="fab" id="fab" data-act="fab" hidden></button>
 <div id="sheet-root"></div>
 <div id="toast-root"></div>
 <input type="file" id="import-file" accept=".json,application/json" hidden>
@@ -723,7 +844,7 @@ function periodData(prefix){
 const hasDemo=()=>KINDS.some(k=>[...S[k].values()].some(o=>o.demo));
 
 /* ---------- ui state ---------- */
-const ui={view:'week',ws:weekStart(new Date()),mode:'grid',filter:'all',month:ymOf(new Date()),year:new Date().getFullYear(),statMode:'month',showArchived:false};
+const ui={view:'week',ws:weekStart(new Date()),mode:'grid',filter:'all',month:ymOf(new Date()),year:new Date().getFullYear(),statMode:'month',statTab:'chart',payMonth:ymOf(new Date()),showArchived:false,detailTab:'lessons',detailFor:null};
 try{const u=JSON.parse(lsGet(UKEY_())||'{}');if(VIEWS.some(v=>v[0]===u.view))ui.view=u.view;if(u.mode==='list'||u.mode==='grid')ui.mode=u.mode;if(u.statMode==='year'||u.statMode==='month')ui.statMode=u.statMode;}catch(e){}
 function UKEY_(){return 'yuqiu-kebiao-ui-v1';}
 function saveUi(){lsSet(UKEY_(),JSON.stringify({view:ui.view,mode:ui.mode,statMode:ui.statMode}));}
@@ -760,18 +881,21 @@ function render(){
   const app=store.mode==='app';
   $('#bnav').hidden=!app;$('#tabs').hidden=!app;$('#sync').hidden=!app;$('#set-btn').hidden=!app;
   const v=$('#view');
-  if(store.mode==='setup'){$('#fab').hidden=true;v.innerHTML=viewSetup();mountSetup();return;}
-  if(store.mode==='auth'){$('#fab').hidden=true;v.innerHTML=viewAuth();mountAuth();return;}
-  if(!app){$('#fab').hidden=true;return;}
+  // 登录后的页面用一屏布局；登录/配置页保持普通滚动（键盘弹出时要能滚）
+  document.documentElement.classList.toggle('fit',app);
+  $('#top-add').hidden=true;
+  if(store.mode==='setup'){v.innerHTML=viewSetup();mountSetup();return;}
+  if(store.mode==='auth'){v.innerHTML=viewAuth();mountAuth();return;}
+  if(!app)return;
   const pn=pendingLessons().length,dot=k=>k==='week'&&pn?`<span class="navdot" aria-label="${pn} 次课待点名">${pn>99?'99+':pn}</span>`:'';
-  $('#bnav').innerHTML=VIEWS.map(([k,t])=>`<button data-act="go" data-v="${k}" ${ui.view===k?'aria-current="page"':''}>${ICON[k]}<span>${t}</span>${dot(k)}</button>`).join('');
+  const ready=store.pulled||total()>0;
+  const addTxt={week:'排课',clients:'新学员',pay:'记收款',stats:'排课'}[ui.view];
+  const navBtns=VIEWS.map(([k,t])=>`<button data-act="go" data-v="${k}" ${ui.view===k?'aria-current="page"':''}>${ICON[k]}<span>${t}</span>${dot(k)}</button>`);
+  navBtns.splice(2,0,`<button class="add" data-act="fab" ${ready?'':'disabled'}><span class="plus">${ICON.plus}</span><span>${addTxt}</span></button>`);
+  $('#bnav').innerHTML=navBtns.join('');
+  const ta=$('#top-add');ta.hidden=!ready;ta.innerHTML=ICON.plus+addTxt;
   $('#tabs').innerHTML=VIEWS.map(([k,t])=>`<button data-act="go" data-v="${k}" ${ui.view===k?'aria-current="page"':''}>${t}${dot(k)}</button>`).join('');
   renderSync();
-  const ready=store.pulled||total()>0;
-  const fab=$('#fab');
-  const fabMap={week:'排课',clients:'新建学员',pay:'记收款',stats:''};
-  fab.hidden=!fabMap[ui.view]||!ready;
-  fab.innerHTML=ICON.plus+'<span>'+(fabMap[ui.view]||'')+'</span>';
   if(!ready){
     const bad=store.sync==='off'||store.sync==='err';
     v.innerHTML=`<div class="loading">${bad?esc(store.syncMsg||'连不上云端，请检查网络')+'<div class="bar-row" style="justify-content:center;margin-top:14px"><button class="btn" data-act="syncNow">重试</button></div>':'正在从云端载入你的课表…'}</div>`;
@@ -780,7 +904,9 @@ function render(){
   const html=({week:viewWeek,clients:viewClients,pay:viewPay,stats:viewStats})[ui.view]();
   const lg=store.pulled?legacy():null;
   v.innerHTML=installBanner()+(lg?`<div class="banner"><span>这台设备上还有 ${lg.n} 条之前没登录时记的数据，要不要存到你的账号里？</span><span class="sp"></span><button class="btn sm primary" data-act="legacyUp">存到账号</button><button class="btn sm" data-act="legacyNo">不用了</button></div>`:'')
-    +(hasDemo()?`<div class="banner"><span>现在显示的是示例数据，用来看看效果。名字带“示例·”的都是假的。</span><span class="sp"></span><button class="btn sm" data-act="clearDemo">清除示例数据</button></div>`:'')+html;
+    +(hasDemo()?`<div class="banner"><span>正在看示例数据（名字带“示例·”的都是假的）</span><span class="sp"></span><button class="btn sm" data-act="clearDemo">清除</button></div>`:'')+html;
+  // 历史未点名的弹窗开着时，点完一个就刷新弹窗里的列表
+  const od=$('#od-sheet');if(od)od.innerHTML=overdueHtml();
 }
 
 function emptyStart(){
@@ -798,30 +924,47 @@ function rcItem(l,withDate){
   const opts=open?`<div class="rc-opts">${RC_OPTS.filter(([k])=>k!==l.status&&(marked(l)||k!=='attended')).map(([k,t])=>`<button class="btn sm" data-act="rc" data-id="${l.id}" data-s="${k}">${t}</button>`).join('')}${marked(l)?`<button class="btn sm" data-act="rc" data-id="${l.id}" data-s="normal">撤销点名</button>`:''}</div>`:'';
   return `<div class="rc c${cColor(l.clientId)}"><button class="rc-main" data-act="editLesson" data-id="${l.id}"><span class="dot"></span><span class="num">${l.start}</span><span class="rc-nm"><b>${esc(cName(l.clientId))}</b>${info?`<small>${esc(info)}</small>`:''}</span></button><span class="rc-act">${act}</span>${opts}</div>`;
 }
+function overdueList(){const td=ymd(new Date());return pendingLessons().filter(l=>l.date<td);}
+function overdueHtml(){
+  const over=overdueList();
+  return `${sheetHead(`历史未点名${over.length?` ${over.length} 次`:''}`)}
+    ${over.length?`<div class="hint">这些课已经过了时间还没点名，点名前不计费、也不扣课时。</div>
+    <div class="rc-list">${over.map(l=>rcItem(l,true)).join('')}</div>
+    <div class="actions"><span class="sp"></span><button class="btn" data-act="close">关闭</button><button class="btn primary" id="rc-bulk" data-act="rcBulk" data-orig="全部标为“到了”">全部标为“到了”</button></div>`
+    :`<div class="okbox">以前的课都点完名了。</div><div class="actions"><span class="sp"></span><button class="btn primary" data-act="close">好的</button></div>`}`;
+}
+function openOverdue(){openSheet('',sheet=>{sheet.id='od-sheet';sheet.innerHTML=overdueHtml();});}
 function soonCard(){
   const now=new Date(),td=ymd(now),tm=ymd(addDays(now,1));
   const today=lessons().filter(l=>l.date===td&&(l.status!=='cancelled'||ui.rcOpen===l.id)).sort(byTime);
   const tmr=lessons().filter(l=>l.date===tm&&l.status!=='cancelled').sort(byTime);
   const todoN=today.filter(l=>!marked(l)).length;
   const item=l=>`<button class="soon-i c${cColor(l.clientId)}" data-act="editLesson" data-id="${l.id}"><span class="dot"></span><span class="num">${l.start}</span><span><b>${esc(cName(l.clientId))}</b>${l.venue?' · '+esc(l.venue):''}</span></button>`;
-  const d=addDays(now,1);
-  const over=pendingLessons().filter(l=>l.date<td);
-  const shown=ui.rcAll?over:over.slice(0,5);
-  const overHtml=over.length?`<div class="panel overdue">
-      <div class="soon-h">${ICON.alert.replace('<svg','<svg width="16" height="16"')}<span>历史未点名</span><span class="sp"></span><span class="num">${over.length} 次</span></div>
-      <div class="hint">这些课已经过了时间还没点名，点名前不计费、也不扣课时。有空的时候逐个确认。</div>
-      <div class="rc-list">${shown.map(l=>rcItem(l,true)).join('')}</div>
-      <div class="inline">${over.length>shown.length?`<button class="btn sm" data-act="rcAll">展开全部 ${over.length} 次</button>`:''}<button class="btn sm" id="rc-bulk" data-act="rcBulk" data-orig="全部标为“到了”">全部标为“到了”</button></div>
-    </div>`:'';
-  return overHtml+`<div class="panel soon">
-    <div><div class="soon-h"><span>今日点名</span><span class="sp"></span><span class="num">${today.length?(todoN?`${todoN} 次没点`:'都点完了'):'今天没课'}</span></div>
-      ${today.length?`<div class="rc-list">${today.map(l=>rcItem(l,false)).join('')}</div>`:'<div class="none">今天没有课</div>'}</div>
-    <div class="tmr"><div class="soon-h">${ICON.bell.replace('<svg','<svg width="16" height="16"')}<span>明天 · 周${WD[(d.getDay()+6)%7]} ${d.getMonth()+1}/${d.getDate()}</span><span class="sp"></span><span class="num">${tmr.length} 次课</span></div>
-      ${tmr.length?tmr.map(item).join(''):'<div class="none">明天没有课</div>'}
-      <button class="btn sm" data-act="remind" style="align-self:flex-start;margin-top:2px">${ICON.bell}设置手机提醒</button></div>
+  const d=addDays(now,1),tmrLbl=`周${WD[(d.getDay()+6)%7]} ${d.getMonth()+1}/${d.getDate()}`;
+  const over=overdueList();
+  const overHtml=over.length?`<button class="odbar" data-act="overdue">${ICON.alert}<span>历史未点名 <b class="num">${over.length}</b> 次</span><small>点名前不计费</small><span class="sp"></span><i>去点名 ›</i></button>`:'';
+  const bell=ICON.bell.replace('<svg','<svg width="16" height="16"');
+  return overHtml+`<div class="panel tdy">
+    <div><div class="soon-h"><span>今日点名</span><small>周${WD[(now.getDay()+6)%7]} ${now.getMonth()+1}/${now.getDate()}</small><span class="sp"></span><span class="num ${todoN?'warn':''}">${today.length?(todoN?`${todoN} 次没点`:'都点完了'):'今天没课'}</span></div>
+      ${today.length?`<div class="rc-list">${today.map(l=>rcItem(l,false)).join('')}</div>`:''}</div>
+    <div class="tmr">
+      <button class="tmr-line" data-act="remind" aria-label="明天的课，点这里设置手机提醒">${bell}<b>明天</b><span>${tmr.length?tmr.map(l=>`${l.start} ${esc(sName(l.clientId))}`).join(' · '):'没有课'}</span><i>${tmr.length?tmr.length+' 次 · ':''}提醒</i></button>
+      <div class="tmr-full"><div class="soon-h">${bell}<span>明天 · ${tmrLbl}</span><span class="sp"></span><span class="num">${tmr.length} 次课</span></div>
+        ${tmr.length?tmr.map(item).join(''):'<div class="none">明天没有课</div>'}
+        <button class="btn sm" data-act="remind" style="align-self:flex-start;margin-top:4px">${ICON.bell}设置手机提醒</button></div></div>
   </div>`;
 }
 
+// 课表显示的时间范围：按前后几周实际上课的时间来定（至少 8 个小时），让课表在一屏里放得下、格子尽量大
+function hourRange(ws,ls){
+  const from=ymd(addDays(ws,-28)),to=ymd(addDays(ws,34));
+  const near=lessons().filter(l=>l.status!=='cancelled'&&l.date>=from&&l.date<=to).concat(ls);
+  let sH=24,eH=0;
+  near.forEach(l=>{sH=Math.min(sH,Math.floor(toMin(l.start)/60));eH=Math.max(eH,Math.ceil(toMin(l.end)/60));});
+  if(sH>=eH){sH=8;eH=22;}
+  while(eH-sH<8){if(eH<24)eH++;if(eH-sH<8&&sH>0)sH--;}
+  return [sH,eH];
+}
 function viewWeek(){
   const ws=ui.ws,days=[...Array(7)].map((_,i)=>addDays(ws,i)),ds=days.map(ymd),today=ymd(new Date()),tmr=ymd(addDays(new Date(),1));
   const ls=lessons().filter(l=>ds.includes(l.date));
@@ -830,17 +973,19 @@ function viewWeek(){
   const isThis=ymd(weekStart(new Date()))===ymd(ws);
   const live=ls.filter(l=>l.status!=='cancelled');
   const doneN=ls.filter(charged).length;
+  // 标题本身就是“回到本周”按钮，省掉一个按钮的位置
+  const titleHtml=isThis?`<div class="wk-title"><b>${title}</b><small>${ws.getFullYear()}年 · 第${isoWeek(ws)}周 · 本周</small></div>`
+    :`<button class="wk-title" data-act="wk" data-d="0" aria-label="回到本周"><b>${title}</b><small>第${isoWeek(ws)}周 · 点这里回到本周</small></button>`;
   let out=(S.clients.size?soonCard():'')+`<div class="wk-nav">
     <button class="icon-btn" data-act="wk" data-d="-7" aria-label="上一周">${ICON.left}</button>
-    <div class="wk-title"><b>${title}</b><small>${ws.getFullYear()}年 · 第${isoWeek(ws)}周${isThis?' · 本周':''}</small></div>
+    ${titleHtml}
     <button class="icon-btn" data-act="wk" data-d="7" aria-label="下一周">${ICON.right}</button>
-    ${isThis?'':'<button class="btn sm" data-act="wk" data-d="0">回到本周</button>'}
     <span class="sp"></span>
     <div class="seg" role="group" aria-label="显示方式"><button data-act="mode" data-m="grid" aria-pressed="${ui.mode==='grid'}">课表</button><button data-act="mode" data-m="list" aria-pressed="${ui.mode==='list'}">列表</button></div>
   </div>`;
   if(!S.clients.size)return out+emptyStart();
   const fixedN=live.filter(isFixed).length;
-  const sumHtml=`<div class="wk-sum"><span><b>${live.length}</b>次课</span><span><b>${nTxt(sum(live,lu))}</b>节</span><span><b>${fixedN}</b>固定 · <b>${live.length-fixedN}</b>单次</span><span><b>${hrsTxt(sum(live,dur))}</b>小时</span><span><b>${short(sum(live,l=>l.fee))}</b>元课酬</span><span><b>${doneN}</b>次已上</span></div>`;
+  const sumHtml=`<div class="wk-sum"><span><b>${live.length}</b>次课</span><span><b>${nTxt(sum(live,lu))}</b>节</span><span class="xs"><b>${fixedN}</b>固定 · <b>${live.length-fixedN}</b>单次</span><span><b>${hrsTxt(sum(live,dur))}</b>小时</span><span><b>${short(sum(live,l=>l.fee))}</b>元</span><span><b>${doneN}</b>已上</span></div>`;
   if(ui.mode==='list'){
     let body='';
     days.forEach((d,i)=>{
@@ -849,13 +994,12 @@ function viewWeek(){
       body+=dl.length?dl.map(lessonRow).join(''):`<button class="row muted" data-act="slot" data-date="${ds[i]}" data-start="19:00"><span class="tm">—</span><span class="mid"><span>没有课，点这里排一节</span></span></button>`;
       body+='</div>';
     });
-    return out+`<div class="panel">${body}${sumHtml}</div>`;
+    return out+`<div class="panel grow col"><div class="scroll">${body}</div>${sumHtml}</div>`;
   }
-  let sH=8,eH=22;
-  ls.forEach(l=>{sH=Math.min(sH,Math.floor(toMin(l.start)/60));eH=Math.max(eH,Math.ceil(toMin(l.end)/60));});
-  const H=window.matchMedia('(min-width:860px)').matches?52:46, rows=eH-sH;
-  ui._sH=sH;ui._H=H;
-  let axis='';for(let h=sH;h<=eH;h++)axis+=`<span style="top:${(h-sH)*H}px;${h===sH?'transform:none;':''}${h===eH?'transform:translateY(-100%);':''}">${h}:00</span>`;
+  const [sH,eH]=hourRange(ws,ls),rows=eH-sH,pct=m=>((m-sH*60)/(rows*60)*100).toFixed(3)+'%';
+  ui._sH=sH;ui._rows=rows;
+  // 第一格的开始时间贴着顶部写，最后的结束整点不写，免得挤在一起
+  let axis=`<span style="top:0;transform:none">${sH}:00</span>`;for(let h=sH+1;h<eH;h++)axis+=`<span style="top:${pct(h*60)}">${h}:00</span>`;
   let cols='';
   const nowD=new Date(),nowMin=nowD.getHours()*60+nowD.getMinutes();
   days.forEach((d,i)=>{
@@ -866,18 +1010,17 @@ function viewWeek(){
     if(cluster.length)flush();
     const blocks=placed.map(({l,k,cl})=>{
       const n=cl.lanes||1,st=lstate(l),fx=isFixed(l);
-      const top=(toMin(l.start)-sH*60)/60*H,h=Math.max(22,dur(l)*H-2);
       const flag=st==='done'||st==='free'?`<span class="flag">${ICON.check}</span>`:st==='absent'||st==='pending'?`<span class="flag">${ICON.alert}</span>`:'';
-      return `<button class="lz c${cColor(l.clientId)} ${st} ${fx?'fixed':'single'}" data-act="editLesson" data-id="${l.id}" style="top:${top}px;height:${h}px;left:calc(${k}*100%/${n});width:calc(100%/${n} - 4px)" title="${esc(cName(l.clientId))} ${l.start}–${l.end} ${esc(l.venue||'')} · ${byUnit(client(l.clientId))?nTxt(lu(l))+' 节 · ':''}${fx?'固定课':'单次课'} · ${STATE_LABEL[st]}">${flag}<b>${esc(sName(l.clientId))}</b><span class="t">${fx?ICON.loop:''}${l.start}</span>${h>60&&l.venue?`<span class="v">${esc(l.venue)}</span>`:''}</button>`;
+      return `<button class="lz c${cColor(l.clientId)} ${st} ${fx?'fixed':'single'}" data-act="editLesson" data-id="${l.id}" style="top:${pct(toMin(l.start))};height:calc(${(dur(l)/rows*100).toFixed(3)}% - 2px);left:calc(${k}*100%/${n});width:calc(100%/${n} - 4px)" title="${esc(cName(l.clientId))} ${l.start}–${l.end} ${esc(l.venue||'')} · ${byUnit(client(l.clientId))?nTxt(lu(l))+' 节 · ':''}${fx?'固定课':'单次课'} · ${STATE_LABEL[st]}">${flag}<b>${esc(sName(l.clientId))}</b><span class="t">${fx?ICON.loop:''}${l.start}</span>${l.venue?`<span class="v">${esc(l.venue)}</span>`:''}</button>`;
     }).join('');
     const isT=ds[i]===today,wk=i>=5;
-    const now=isT&&nowMin>=sH*60&&nowMin<=eH*60?`<div class="now" style="top:${(nowMin-sH*60)/60*H}px"></div>`:'';
+    const now=isT&&nowMin>=sH*60&&nowMin<=eH*60?`<div class="now" style="top:${pct(nowMin)}"></div>`:'';
     cols+=`<div class="tt-col ${isT?'today':''} ${wk?'weekend':''}" data-act="slot" data-date="${ds[i]}" aria-label="周${WD[i]}，点空白处排课">${blocks}${now}</div>`;
   });
   const head=days.map((d,i)=>`<div class="tt-day ${ds[i]===today?'today':''} ${ds[i]===tmr?'tmr':''} ${i>=5?'weekend':''}"><span>周${WD[i]}</span><b>${d.getDate()}</b></div>`).join('');
-  return out+`<div class="tt" style="--h:${H}px"><div class="tt-row tt-days"><div></div>${head}</div>
-    <div class="tt-row" style="height:${rows*H}px"><div class="tt-axis">${axis}</div>${cols}</div>${sumHtml}</div>
-    <div class="legend-k"><span><i></i>${ICON.loop.replace('<svg','<svg width="12" height="12" style="vertical-align:-1px;margin-right:3px"')}固定课（每周循环）</span><span><i class="d"></i>单次课（虚线框）</span><span>点空白处排课 · 时间过了的课自动算“已上”</span></div>`;
+  return out+`<div class="tt grow" style="--rows:${rows};--min-h:${rows*16+80}px"><div class="tt-row tt-days"><div></div>${head}</div>
+    <div class="tt-row tt-body"><div class="tt-axis">${axis}</div>${cols}</div>${sumHtml}</div>
+    <div class="legend-k"><span><i></i>${ICON.loop.replace('<svg','<svg width="12" height="12" style="vertical-align:-1px;margin-right:3px"')}固定课（每周循环）</span><span><i class="d"></i>单次课（虚线框）</span><span>点空白处排课 · 过了时间的课点名后才计费</span></div>`;
 }
 function lessonRow(l){
   const st=lstate(l),fx=isFixed(l);
@@ -893,21 +1036,22 @@ function viewClients(){
   const nStu=all.filter(c=>c.type==='student'&&!c.archived).length,nOrg=all.filter(c=>c.type==='org'&&!c.archived).length,nArc=all.filter(c=>c.archived).length;
   let out=`<div class="bar-row"><div class="seg" role="group" aria-label="筛选">
     <button data-act="filter" data-f="all" aria-pressed="${ui.filter==='all'}">全部</button>
-    <button data-act="filter" data-f="student" aria-pressed="${ui.filter==='student'}">私教学员 ${nStu}</button>
+    <button data-act="filter" data-f="student" aria-pressed="${ui.filter==='student'}">私教 ${nStu}</button>
     <button data-act="filter" data-f="org" aria-pressed="${ui.filter==='org'}">机构 ${nOrg}</button></div>
-    <span class="sp"></span>${nArc?`<label class="check"><input type="checkbox" id="show-arc" ${ui.showArchived?'checked':''}>显示以往学员（已停用） ${nArc}</label>`:''}</div>`;
-  out+='<div class="cards">'+list.map(c=>{
+    <span class="sp"></span>${nArc?`<div class="seg"><button data-act="arc" aria-pressed="${ui.showArchived}" title="显示已停用的以往学员">以往 ${nArc}</button></div>`:''}</div>`;
+  if(!list.length)return out+'<div class="panel empty">这个分类下还没有人。</div>';
+  // 一行一个学员：左边名字和下次上课，右边余额/欠费和剩余课时；点开看详情
+  out+='<div class="panel grow clist">'+list.map(c=>{
     const s=summary(c);
-    const balLbl=s.balance<0?(c.type==='org'?'待结算':'欠费'):'预付余额';
-    const third=s.remain!=null?`<div><span>剩余课时</span><b class="${s.remain<=1?'neg':''}">${s.remain}<small> 节</small></b></div>`:`<div><span>累计课时</span><b>${hrsTxt(s.hrs)}<small> 小时</small></b></div>`;
+    const bal=s.balance<0?`<b class="neg">${c.type==='org'?'待结 ':'欠 '}${money(-s.balance)}</b>`:s.balance>0?`<b class="pos">余 ${money(s.balance)}</b>`:'<b class="muted" style="font-size:14px">已结清</b>';
+    const third=s.remain!=null?`<small class="${s.remain<=1?'neg':''}">课时包剩 ${nTxt(s.remain)} 节</small>`:`<small>已上 ${nTxt(s.count)} 节</small>`;
     const fx=seriesList(c.id).filter(x=>x.up.length);
-    return `<button class="card c${(c.color||0)%8}" data-act="clientDetail" data-id="${c.id}">
-      <div class="card-h"><span class="ava">${esc(String(c.name).replace(/^示例·/,'').slice(0,1))}</span><span class="nm"><b>${esc(c.name)}</b><span>${c.type==='org'?'机构':'私教学员'} · ${rateTxt(c)}${s.firstYm?` · ${+s.firstYm.slice(0,4)}.${+s.firstYm.slice(5)} 起`:''}</span></span>${c.archived?'<span class="chip">已停用</span>':''}</div>
-      <div class="kv"><div><span>累计上课</span><b>${nTxt(s.count)}<small> 节</small></b></div>
-        <div><span>${balLbl}</span><b class="${s.balance<0?'neg':s.balance>0?'pos':''}">${money(Math.abs(s.balance))}</b></div>${third}</div>
-      <div class="next">${fx.length?`<span class="chip acc">${ICON.loop}固定 ${esc(wdsTxt(fx[0].wds))} ${fx[0].last.start}</span>`:''}${s.next?`<span>下次 ${mdTxt(s.next.date)} 周${wdOf(s.next.date)} ${s.next.start}</span>`:`<span>${s.lastDone?'最近一次 '+s.lastDone.date:'暂无待上的课'}</span>`}</div>
-    </button>`;}).join('')+'</div>';
-  if(!list.length)out+='<div class="panel empty">这个分类下还没有人。</div>';
+    const info=[s.next?`下次 ${mdTxt(s.next.date)} 周${wdOf(s.next.date)} ${s.next.start}`:s.lastDone?`最近一次 ${mdTxt(s.lastDone.date)}`:'暂无待上的课',
+      fx.length?`固定${wdsTxt(fx[0].wds)}`:'',rateTxt(c).replace(/（.*）/,'')].filter(Boolean).join(' · ');
+    return `<button class="crow c${(c.color||0)%8} ${c.archived?'arc':''}" data-act="clientDetail" data-id="${c.id}">
+      <span class="ava">${esc(String(c.name).replace(/^示例·/,'').slice(0,1))}</span>
+      <span class="cm"><b><span>${esc(c.name)}</span>${c.type==='org'?'<span class="chip navy">机构</span>':''}${c.archived?'<span class="chip">已停用</span>':''}</b><small>${esc(info)}</small></span>
+      <span class="cr">${bal}${third}</span></button>`;}).join('')+'</div>';
   return out;
 }
 
@@ -916,28 +1060,27 @@ function viewPay(){
   const cs=clientsArr(true).map(c=>({c,s:summary(c)}));
   const owe=cs.filter(x=>x.s.balance<0).sort((a,b)=>a.s.balance-b.s.balance);
   const pre=cs.filter(x=>x.s.balance>0);
-  const ym=ymOf(new Date());
+  const ym=ymOf(new Date()),pm=ui.payMonth;
   const ps=payments().sort((a,b)=>b.date.localeCompare(a.date)||String(b.created||'').localeCompare(String(a.created||'')));
-  const thisM=ps.filter(p=>p.date.startsWith(ym));
-  let out=`<div class="tiles t3">
-    <div class="tile hl"><span>待收合计</span><b class="num">${money(-sum(owe,x=>x.s.balance))}</b><small>${owe.length} 位学员 / 机构未结清</small></div>
+  const thisM=ps.filter(p=>p.date.startsWith(ym)),mPs=ps.filter(p=>p.date.startsWith(pm));
+  let out=`<div class="tiles cmp t3">
+    <div class="tile hl"><span>待收合计</span><b class="num">${money(-sum(owe,x=>x.s.balance))}</b><small>${owe.length} 位未结清</small></div>
     <div class="tile"><span>本月已到账</span><b class="num">${money(sum(thisM,p=>p.amount))}</b><small>${thisM.length} 笔</small></div>
-    <div class="tile"><span>预收余额</span><b class="num">${money(sum(pre,x=>x.s.balance))}</b><small>学员预付还没上完的部分</small></div></div>`;
-  out+=`<div class="panel"><div class="panel-h"><h3>待收款</h3><span class="sp"></span><span class="hint">已上课的课费减去已收款</span></div>`;
-  out+=owe.length?owe.map(({c,s})=>`<div class="row c${(c.color||0)%8}"><span class="stripe"></span><span class="mid"><b>${esc(c.name)}</b><span>${c.type==='org'?'机构待结算':'学员欠费'} · 已上 ${nTxt(s.count)} 节 · 已收 ${money(s.paid)}</span></span>
+    <div class="tile"><span>预收余额</span><b class="num">${money(sum(pre,x=>x.s.balance))}</b><small>预付还没上完</small></div></div>`;
+  // 待收款：最多占一半高度，多了在框里滚
+  out+=`<div class="panel col owe" style="max-height:45%"><div class="panel-h"><h3>待收款</h3><span class="sp"></span><span class="hint">已上课的课费 − 已收款</span></div><div class="scroll">`;
+  out+=owe.length?owe.map(({c,s})=>`<div class="row c${(c.color||0)%8}"><span class="stripe"></span><span class="mid"><b>${esc(c.name)}</b><span>已上 ${nTxt(s.count)} 节 · 已收 ${money(s.paid)}</span></span>
       <span class="amt neg">${money(-s.balance)}</span><button class="btn sm primary" data-act="newPay" data-client="${c.id}" data-amount="${-s.balance}">记收款</button></div>`).join('')
-    :'<div class="empty">没有待收款，账都结清了。</div>';
-  out+='</div>';
-  out+=`<div class="panel"><div class="panel-h"><h3>收款记录</h3><span class="sp"></span><button class="btn sm" data-act="newPay">${ICON.plus}记一笔</button></div>`;
-  if(!ps.length)out+='<div class="empty">还没有收款记录。学员付了钱或机构结算后，在这里记一笔。</div>';
-  let curM='';
-  ps.forEach(p=>{
-    const m=p.date.slice(0,7);
-    if(m!==curM){curM=m;const mt=ps.filter(x=>x.date.startsWith(m));out+=`<div class="day-h"><span>${ymTxt(m)}</span><span style="flex:1"></span><span class="num muted" style="font-size:15px">${money(sum(mt,x=>x.amount))}</span></div>`;}
-    out+=`<button class="row c${cColor(p.clientId)}" data-act="editPay" data-id="${p.id}"><span class="stripe"></span><span class="tm">${mdTxt(p.date)} 周${wdOf(p.date)}</span>
-      <span class="mid"><b>${esc(cName(p.clientId))}</b><span>${esc(p.method||'')}${+p.lessons>0?` · 课时包 ${p.lessons} 节`:''}${p.note?' · '+esc(p.note):''}</span></span><span class="amt">${money(p.amount)}</span></button>`;
-  });
-  return out+'</div>';
+    :'<div class="empty" style="padding:14px">没有待收款，账都结清了。</div>';
+  out+='</div></div>';
+  // 收款记录按月翻看，不用一直往下滑
+  out+=`<div class="panel grow col" style="--min-h:200px"><div class="panel-h"><h3>收款记录</h3>
+      <span class="inline" style="gap:0;flex-wrap:nowrap"><button class="icon-btn" data-act="pmon" data-d="-1" aria-label="上个月">${ICON.left}</button><b style="white-space:nowrap">${ymTxt(pm)}</b><button class="icon-btn" data-act="pmon" data-d="1" aria-label="下个月">${ICON.right}</button></span>
+      <span class="sp"></span>${pm!==ym?'<button class="btn sm" data-act="pmon" data-d="0">本月</button>':''}<span class="num muted" style="font-size:15px">${money(sum(mPs,x=>x.amount))}</span></div><div class="scroll">`;
+  out+=mPs.length?mPs.map(p=>`<button class="row c${cColor(p.clientId)}" data-act="editPay" data-id="${p.id}"><span class="stripe"></span><span class="tm s">${mdTxt(p.date)} 周${wdOf(p.date)}</span>
+      <span class="mid"><b>${esc(cName(p.clientId))}</b><span>${esc(p.method||'')}${+p.lessons>0?` · 课时包 ${p.lessons} 节`:''}${p.note?' · '+esc(p.note):''}</span></span><span class="amt">${money(p.amount)}</span></button>`).join('')
+    :`<div class="empty" style="padding:16px">${ps.length?'这个月没有收款记录。':'还没有收款记录。学员付了钱或机构结算后，点下面的“记收款”。'}</div>`;
+  return out+'</div></div>';
 }
 
 function deltaTxt(cur,prev){
@@ -952,61 +1095,69 @@ function breakdownTable(d){
     return {c,n:r2(sum(cl,lu)+sum(hs,h=>h.count)),h:sum(cl,dur)+sum(hs,h=>h.hours),inc:sum(cl,l=>l.fee)+sum(hs,h=>h.fee),cost:sum(cl,l=>l.cost),his:hs.length>0};
   }).filter(r=>r.n||r.inc).sort((a,b)=>b.inc-a.inc);
   const tot=Math.max(1,d.income);
-  return rows.length?`<div class="tbl-wrap"><table><thead><tr><th>学员 / 机构</th><th class="n">节数</th><th class="n">小时</th><th class="n">课酬</th><th class="n">成本</th><th>占比</th></tr></thead><tbody>${rows.map(r=>`<tr class="c${(r.c.color||0)%8} click" data-act="clientDetail" data-id="${r.c.id}">
-    <td><span class="inline"><span class="dot"></span>${esc(r.c.name)}${r.his?' <span class="chip">含补录</span>':''}</span></td><td class="n">${nTxt(r.n)}</td><td class="n">${hrsTxt(r.h)}</td><td class="n">${money(r.inc)}</td><td class="n">${r.cost?money(r.cost):'—'}</td>
-    <td><span class="share"><i style="width:${r.inc/tot*100}%"></i></span></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">这段时间还没有上过课。</div>';
+  // 占比条放在名字下面，手机上少一列、不用左右滑
+  return rows.length?`<div class="tbl-wrap"><table><thead><tr><th>学员 / 机构 · 占比</th><th class="n">节数</th><th class="n">小时</th><th class="n">课酬</th><th class="n">成本</th></tr></thead><tbody>${rows.map(r=>`<tr class="c${(r.c.color||0)%8} click" data-act="clientDetail" data-id="${r.c.id}">
+    <td style="white-space:normal;min-width:0"><span class="inline" style="flex-wrap:nowrap;gap:6px"><span class="dot"></span><span>${esc(sName(r.c.id))}${r.his?' <span class="chip">含补录</span>':''}</span></span><span class="share"><i style="width:${r.inc/tot*100}%"></i></span></td><td class="n">${nTxt(r.n)}</td><td class="n">${hrsTxt(r.h)}</td><td class="n">${money(r.inc)}</td><td class="n">${r.cost?money(r.cost):'—'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">这段时间还没有上过课。</div>';
+}
+function barChart(months,selYm){
+  const max=Math.max(1,...months.map(x=>x.pri+x.org));
+  return `<div class="legend" style="padding-top:2px"><span><i class="b-pri"></i>私教</span><span><i class="b-org"></i>机构</span><span class="sp" style="flex:1"></span><span>点柱子看那个月</span></div>
+    <div class="chart fill"><div class="bars">${months.map(x=>`<button class="bar ${x.k===selYm?'sel':''}" data-act="pickMonth" data-ym="${x.k}" aria-label="${ymTxt(x.k)} 课酬 ${money(x.pri+x.org)}">
+      <span class="bv">${x.pri+x.org?short(x.pri+x.org):''}</span>
+      <span class="stack"><i class="b-org" style="height:${x.org/max*100}%"></i><i class="b-pri" style="height:${x.pri/max*100}%"></i></span>
+      <span class="bl">${+x.k.slice(5)}<em>月</em></span></button>`).join('')}</div></div>`;
+}
+// 统计页下半部分：图表 / 明细 / 收入来源 用分页切换，一次只占一块屏幕
+function statPanel(tabs,body){
+  return `<div class="panel grow col" style="--min-h:230px"><div class="panel-h" style="padding-bottom:4px"><div class="seg" role="group" aria-label="内容">${tabs.map(([k,t])=>`<button data-act="statTab" data-t="${k}" aria-pressed="${ui.statTab===k}">${t}</button>`).join('')}</div></div>
+    <div class="statpane">${body}</div></div>`;
 }
 function viewStats(){
   if(!S.clients.size)return emptyStart();
   const yearMode=ui.statMode==='year';
   const seg=`<div class="seg" role="group" aria-label="统计周期"><button data-act="statMode" data-m="month" aria-pressed="${!yearMode}">月度</button><button data-act="statMode" data-m="year" aria-pressed="${yearMode}">年度</button></div>`;
-  const legend=`<div class="legend"><span><i class="b-pri"></i>私教</span><span><i class="b-org"></i>机构</span></div>`;
   if(yearMode){
+    if(!['chart','table','src'].includes(ui.statTab))ui.statTab='chart';
     const y=ui.year,d=periodData(String(y)),prev=periodData(String(y-1)),thisY=new Date().getFullYear();
     let out=`<div class="wk-nav"><button class="icon-btn" data-act="yr" data-d="-1" aria-label="上一年">${ICON.left}</button>
-      <div class="wk-title"><b>${y}年</b><small>${y===thisY?'今年 · 统计到今天':'年度统计'}</small></div>
-      <button class="icon-btn" data-act="yr" data-d="1" aria-label="下一年">${ICON.right}</button>${y!==thisY?'<button class="btn sm" data-act="yr" data-d="0">回到今年</button>':''}<span class="sp"></span>${seg}</div>`;
-    out+=`<div class="tiles">
+      ${y===thisY?`<div class="wk-title"><b>${y}年</b><small>今年 · 统计到今天</small></div>`:`<button class="wk-title" data-act="yr" data-d="0"><b>${y}年</b><small>点这里回到今年</small></button>`}
+      <button class="icon-btn" data-act="yr" data-d="1" aria-label="下一年">${ICON.right}</button><span class="sp"></span>${seg}</div>`;
+    out+=`<div class="tiles cmp">
       <div class="tile hl"><span>全年课酬收入</span><b class="num">${money(d.income)}</b><small>私教 ${money(d.pri)} · 机构 ${money(d.org)} ${deltaTxt(d.income,prev.income)}</small></div>
       <div class="tile"><span>全年净收入</span><b class="num">${money(d.income-d.cost)}</b><small>扣除场地等成本 ${money(d.cost)}</small></div>
       <div class="tile"><span>全年课时</span><b class="num">${hrsTxt(d.hrs)}<small> 小时</small></b><small>${nTxt(d.count)} 节 · ${d.sessions} 次${d.pend?` · 待点名 ${d.pend} 次`:''} ${deltaTxt(d.hrs,prev.hrs)}</small></div>
       <div class="tile"><span>全年到账</span><b class="num">${money(d.received)}</b><small>${prev.income?`去年课酬 ${money(prev.income)}`:'实际收到的钱'}</small></div></div>`;
     const months=[...Array(12)].map((_,i)=>`${y}-${pad(i+1)}`).map(k=>({k,...periodData(k)}));
-    const max=Math.max(1,...months.map(x=>x.pri+x.org));
-    out+=`<div class="panel"><div class="panel-h"><h3>${y}年每月课酬</h3><span class="sp"></span><span class="hint">点柱子看那个月的详情</span></div>${legend}
-      <div class="chart"><div class="bars">${months.map(x=>`<button class="bar" data-act="pickMonth" data-ym="${x.k}" aria-label="${ymTxt(x.k)} 课酬 ${money(x.pri+x.org)}">
-        <span class="bv">${x.pri+x.org?short(x.pri+x.org):''}</span>
-        <span class="stack"><i class="b-org" style="height:${x.org/max*100}%"></i><i class="b-pri" style="height:${x.pri/max*100}%"></i></span>
-        <span class="bl">${+x.k.slice(5)}<em>月</em></span></button>`).join('')}</div></div></div>`;
-    const mrows=months.filter(x=>x.count||x.received||x.upN);
-    out+=`<div class="panel"><div class="panel-h"><h3>月度明细</h3></div>${mrows.length?`<div class="tbl-wrap"><table><thead><tr><th>月份</th><th class="n">节数</th><th class="n">小时</th><th class="n">课酬</th><th class="n">成本</th><th class="n">净收入</th><th class="n">到账</th></tr></thead><tbody>
-      ${mrows.map(x=>`<tr class="click" data-act="pickMonth" data-ym="${x.k}"><td>${+x.k.slice(5)}月${x.hs.length?' <span class="chip">含补录</span>':''}${x.upN?` <span class="chip acc">待上 ${x.upN}</span>`:''}</td><td class="n">${nTxt(x.count)}</td><td class="n">${hrsTxt(x.hrs)}</td><td class="n">${money(x.income)}</td><td class="n">${x.cost?money(x.cost):'—'}</td><td class="n">${money(x.income-x.cost)}</td><td class="n">${money(x.received)}</td></tr>`).join('')}
-      <tr class="tot"><td>合计</td><td class="n">${nTxt(d.count)}</td><td class="n">${hrsTxt(d.hrs)}</td><td class="n">${money(d.income)}</td><td class="n">${d.cost?money(d.cost):'—'}</td><td class="n">${money(d.income-d.cost)}</td><td class="n">${money(d.received)}</td></tr></tbody></table></div>`:'<div class="empty">这一年还没有记录。</div>'}</div>`;
-    out+=`<div class="panel"><div class="panel-h"><h3>全年收入来源</h3></div>${breakdownTable(d)}</div>`;
-    return out;
+    let body;
+    if(ui.statTab==='chart')body=barChart(months,null);
+    else if(ui.statTab==='src')body=breakdownTable(d);
+    else{
+      const mrows=months.filter(x=>x.count||x.received||x.upN);
+      body=mrows.length?`<div class="tbl-wrap"><table><thead><tr><th>月份</th><th class="n">节数</th><th class="n">小时</th><th class="n">课酬</th><th class="n">成本</th><th class="n">净收入</th><th class="n">到账</th></tr></thead><tbody>
+      ${mrows.map(x=>`<tr class="click" data-act="pickMonth" data-ym="${x.k}"><td>${+x.k.slice(5)}月${x.hs.length?' <span class="chip">补录</span>':''}${x.upN?` <span class="chip acc">待上 ${x.upN}</span>`:''}</td><td class="n">${nTxt(x.count)}</td><td class="n">${hrsTxt(x.hrs)}</td><td class="n">${money(x.income)}</td><td class="n">${x.cost?money(x.cost):'—'}</td><td class="n">${money(x.income-x.cost)}</td><td class="n">${money(x.received)}</td></tr>`).join('')}
+      <tr class="tot"><td>合计</td><td class="n">${nTxt(d.count)}</td><td class="n">${hrsTxt(d.hrs)}</td><td class="n">${money(d.income)}</td><td class="n">${d.cost?money(d.cost):'—'}</td><td class="n">${money(d.income-d.cost)}</td><td class="n">${money(d.received)}</td></tr></tbody></table></div>`:'<div class="empty">这一年还没有记录。</div>';
+    }
+    return out+statPanel([['chart','每月课酬'],['table','月度明细'],['src','收入来源']],body);
   }
+  if(!['chart','src','wd'].includes(ui.statTab))ui.statTab='chart';
   const ym=ui.month,d=periodData(ym),prev=periodData(addMonths(ym,-1)),thisM=ymOf(new Date());
   let out=`<div class="wk-nav"><button class="icon-btn" data-act="mon" data-d="-1" aria-label="上个月">${ICON.left}</button>
-    <div class="wk-title"><b>${ymTxt(ym)}</b><small>${ym===thisM?'本月 · 统计到今天':'月度统计'}</small></div>
-    <button class="icon-btn" data-act="mon" data-d="1" aria-label="下个月">${ICON.right}</button>${ym!==thisM?'<button class="btn sm" data-act="mon" data-d="0">回到本月</button>':''}<span class="sp"></span>${seg}</div>`;
-  out+=`<div class="tiles">
+    ${ym===thisM?`<div class="wk-title"><b>${ymTxt(ym)}</b><small>本月 · 统计到今天</small></div>`:`<button class="wk-title" data-act="mon" data-d="0"><b>${ymTxt(ym)}</b><small>点这里回到本月</small></button>`}
+    <button class="icon-btn" data-act="mon" data-d="1" aria-label="下个月">${ICON.right}</button><span class="sp"></span>${seg}</div>`;
+  out+=`<div class="tiles cmp">
     <div class="tile hl"><span>课酬收入</span><b class="num">${money(d.income)}</b><small>私教 ${money(d.pri)} · 机构 ${money(d.org)} ${deltaTxt(d.income,prev.income)}</small></div>
     <div class="tile"><span>净收入</span><b class="num">${money(d.income-d.cost)}</b><small>扣除场地等成本 ${money(d.cost)}</small></div>
     <div class="tile"><span>已上课时</span><b class="num">${hrsTxt(d.hrs)}<small> 小时</small></b><small>${nTxt(d.count)} 节 · ${d.sessions} 次${d.pend?` · <b style="font:inherit;color:var(--warn)">待点名 ${d.pend} 次</b>`:''}${d.cancel?` · 请假/取消 ${d.cancel} 次`:''}${d.hisFee?' · 含补录':''}</small></div>
     <div class="tile"><span>本月到账</span><b class="num">${money(d.received)}</b><small>${d.upN?`还有 ${d.upN} 次课待上，约 ${money(d.upFee)}`:'实际收到的钱'}</small></div></div>`;
-  const months=[...Array(12)].map((_,i)=>addMonths(ym,i-11)).map(k=>({k,...periodData(k)}));
-  const max=Math.max(1,...months.map(x=>x.pri+x.org));
-  out+=`<div class="panel"><div class="panel-h"><h3>近 12 个月课酬</h3><span class="sp"></span><span class="hint">点柱子切换月份</span></div>${legend}
-    <div class="chart"><div class="bars">${months.map(x=>`<button class="bar ${x.k===ym?'sel':''}" data-act="pickMonth" data-ym="${x.k}" aria-label="${ymTxt(x.k)} 课酬 ${money(x.pri+x.org)}">
-      <span class="bv">${x.pri+x.org?short(x.pri+x.org):''}</span>
-      <span class="stack"><i class="b-org" style="height:${x.org/max*100}%"></i><i class="b-pri" style="height:${x.pri/max*100}%"></i></span>
-      <span class="bl">${+x.k.slice(5)}<em>月</em></span></button>`).join('')}</div></div></div>`;
-  const wh=[0,0,0,0,0,0,0];[...d.ch,...d.up].forEach(l=>{wh[wdIdx(l.date)]+=dur(l);});
-  const wmax=Math.max(1,...wh);
-  const wd=`<div class="wd">${wh.map((h,i)=>`<span>周${WD[i]}</span><span class="track"><i style="width:${h/wmax*100}%"></i></span><span class="num">${hrsTxt(h)} 小时</span>`).join('')}</div>`;
-  out+=`<div class="grid2"><div class="panel"><div class="panel-h"><h3>收入来源</h3></div>${breakdownTable(d)}</div>
-    <div class="panel"><div class="panel-h"><h3>每周几最忙</h3><span class="sp"></span><span class="hint">本月含待上的课</span></div>${wd}</div></div>`;
-  return out;
+  let body;
+  if(ui.statTab==='chart')body=barChart([...Array(12)].map((_,i)=>addMonths(ym,i-11)).map(k=>({k,...periodData(k)})),ym);
+  else if(ui.statTab==='src')body=breakdownTable(d);
+  else{
+    const wh=[0,0,0,0,0,0,0];[...d.ch,...d.up].forEach(l=>{wh[wdIdx(l.date)]+=dur(l);});
+    const wmax=Math.max(1,...wh);
+    body=`<div class="wd">${wh.map((h,i)=>`<span>周${WD[i]}</span><span class="track"><i style="width:${h/wmax*100}%"></i></span><span class="num">${hrsTxt(h)} 小时</span>`).join('')}</div><div class="hint" style="padding:0 16px 10px">本月每周几的上课小时数（含待上的课）</div>`;
+  }
+  return out+statPanel([['chart','近 12 个月'],['src','收入来源'],['wd','每周几最忙']],body);
 }
 
 const BRAND_SVG='<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4l5 15M16 3v16M23 4l-5 15M6 8c3 1 7 1.5 10 1.5S23 9 26 8"/><path d="M8 5.5L13 19h6l5-13.5"/><circle cx="16" cy="24" r="5" fill="currentColor" stroke="none"/></svg>';
@@ -1086,10 +1237,10 @@ function mountSetup(){
 
 /* ---------- sheets ---------- */
 let sheetCleanup=null;
-function openSheet(html,onMount){
+function openSheet(html,onMount,cls){
   closeSheet();
   const root=$('#sheet-root');
-  root.innerHTML=`<div class="sheet-wrap"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+  root.innerHTML=`<div class="sheet-wrap"><div class="sheet ${cls||''}" role="dialog" aria-modal="true">${html}</div></div>`;
   const wrap=root.firstElementChild;
   wrap.addEventListener('mousedown',e=>{if(e.target===wrap)closeSheet();});
   const sheet=wrap.firstElementChild;
@@ -1134,35 +1285,33 @@ function openLessonForm(opt){
   const st=l?lstate(l):'upcoming';
   const startFixed=!l&&(opt.fixed!=null?opt.fixed:false);
   const sInfo=series.length?{wds:[...new Set(series.map(x=>wdIdx(x.date)))].sort(),done:series.filter(charged).length,up:series.filter(x=>lstate(x)==='upcoming').length}:null;
+  const rcOn=!!l||(!startFixed&&v.date<=ymd(new Date()));   // 新排的单次课：今天或以前的才需要点名
   openSheet(`${sheetHead(l?'编辑课程':'排课')}
-    ${l?`<div class="inline"><span class="chip ${STATE_CHIP[st]}">${STATE_LABEL[st]}</span>${series.length?`<span class="chip acc">${ICON.loop}固定课</span>`:'<span class="chip">单次课</span>'}<span class="hint">${l.date} 周${wdOf(l.date)}</span></div>
-      ${sInfo?`<div class="infobox">这节属于固定课：每${esc(wdsTxt(sInfo.wds))} ${l.start}，共 ${series.length} 次（已上 ${sInfo.done}，待上 ${sInfo.up}），排到 ${series[series.length-1].date}。</div>`:''}`
-    :`<div class="field"><span class="lbl">课程类型</span><div class="seg big" role="group" id="f-kind">
-        <button type="button" data-k="single" aria-pressed="${!startFixed}">单次课<small>临时约的、只上这一次</small></button>
-        <button type="button" data-k="fixed" aria-pressed="${startFixed}">固定课<small>每周固定时间循环上</small></button></div></div>`}
-    <div class="field"><label for="f-client">学员 / 机构</label><select id="f-client">${clientOptions(v.clientId,v.clientId)}</select></div>
-    <div class="row3"><div class="field"><label for="f-date" id="f-date-l">${l?'日期':'日期'}</label><input type="date" id="f-date" value="${v.date}"></div>
-      <div class="field"><label for="f-start">开始</label><input type="time" id="f-start" step="300" value="${v.start}"></div>
-      <div class="field"><label for="f-end">结束</label><input type="time" id="f-end" step="300" value="${v.end}"></div></div>
-    <div class="inline"><span class="lbl">时长</span>${[60,90,120,150].map(m=>`<button class="btn sm" type="button" data-dur="${m}">${m/60}小时</button>`).join('')}</div>
+    ${l?`<div class="inline" style="gap:6px"><span class="chip ${STATE_CHIP[st]}">${STATE_LABEL[st]}</span>${series.length?`<span class="chip acc">${ICON.loop}固定课</span>`:'<span class="chip">单次课</span>'}<span class="hint">${sInfo?`每${esc(wdsTxt(sInfo.wds))} ${l.start} · 共 ${series.length} 次（已上 ${sInfo.done}，待上 ${sInfo.up}）· 排到 ${mdTxt(series[series.length-1].date)}`:`${l.date} 周${wdOf(l.date)}`}</span></div>`
+    :`<div class="fl"><span class="lbl">类型</span><div class="seg" role="group" id="f-kind" style="display:grid;grid-template-columns:1fr 1fr">
+        <button type="button" data-k="single" aria-pressed="${!startFixed}">单次课</button>
+        <button type="button" data-k="fixed" aria-pressed="${startFixed}">固定课·每周循环</button></div></div>`}
+    <div class="fl"><label for="f-client">学员</label><select id="f-client">${clientOptions(v.clientId,v.clientId)}</select></div>
+    <div class="fl"><label for="f-date">${!l?'日期':'日期'}</label><input type="date" id="f-date" value="${v.date}"></div>
+    <div class="fl"><label for="f-start">时间</label><div class="tm2"><input type="time" id="f-start" step="300" value="${v.start}" aria-label="开始时间"><span class="muted">–</span><input type="time" id="f-end" step="300" value="${v.end}" aria-label="结束时间"></div>
+      <div class="durs sub">${[60,90,120,150].map(m=>`<button class="btn sm" type="button" data-dur="${m}">${m/60} 小时</button>`).join('')}</div></div>
     ${!l?`<div class="fixedbox" id="f-fixed" ${startFixed?'':'hidden'}>
-      <div class="field"><span class="lbl">每周哪几天上</span><div class="wdpick" id="f-wds">${WD.map((w,i)=>`<button type="button" data-w="${i}" aria-pressed="${i===wdIdx(v.date)}">${w}</button>`).join('')}</div></div>
-      <div class="field"><span class="lbl">排到什么时候</span><div class="inline"><div class="seg" role="group" id="f-until-mode"><button type="button" data-u="weeks" aria-pressed="true">排几周</button><button type="button" data-u="date" aria-pressed="false">排到某天</button></div>
-        <span id="f-weeks-w" class="inline"><input class="inp sm" id="f-weeks" inputmode="numeric" value="12"><span>周</span></span>
+      <div class="fl"><span class="lbl">每周</span><div class="wdpick" id="f-wds">${WD.map((w,i)=>`<button type="button" data-w="${i}" aria-pressed="${i===wdIdx(v.date)}">${w}</button>`).join('')}</div></div>
+      <div class="fl"><span class="lbl">排到</span><div class="inline" style="gap:6px"><div class="seg" role="group" id="f-until-mode"><button type="button" data-u="weeks" aria-pressed="true">排几周</button><button type="button" data-u="date" aria-pressed="false">到某天</button></div>
+        <span id="f-weeks-w" class="inline" style="gap:4px"><input class="inp sm" id="f-weeks" inputmode="numeric" value="12" style="width:56px"><span>周</span></span>
         <input type="date" class="inp" id="f-until" style="width:auto" hidden value="${ymd(addDays(parseYmd(v.date),7*12))}"></div></div>
       <div class="hint" id="f-preview"></div></div>`:''}
-    <div class="field"><label for="f-venue">场地</label><input id="f-venue" list="f-venues" value="${esc(v.venue)}" placeholder="例如：奥体中心 3号场"><datalist id="f-venues">${venues().map(x=>`<option value="${esc(x)}">`).join('')}</datalist></div>
-    <div class="field"><div class="row-fee">
-      <div class="field" id="f-units-w" ${byUnit(client(v.clientId))?'':'hidden'}><label for="f-units">节数</label><input id="f-units" inputmode="decimal" value="${nTxt(lu(v))}"></div>
-      <div class="field"><label for="f-fee">课费（元）</label><input id="f-fee" inputmode="decimal" value="${v.fee}"></div>
-      <div class="field"><label for="f-cost">场地费（元）</label><input id="f-cost" inputmode="decimal" value="${v.cost||0}"></div></div>
+    <div class="fl"><label for="f-venue">场地</label><input id="f-venue" list="f-venues" value="${esc(v.venue)}" placeholder="例如：奥体中心 3号场"><datalist id="f-venues">${venues().map(x=>`<option value="${esc(x)}">`).join('')}</datalist></div>
+    <div class="fl"><span class="lbl">费用</span><div class="fees">
+      <span class="fi" id="f-units-w" ${byUnit(client(v.clientId))?'':'hidden'}><label for="f-units">节数</label><input id="f-units" inputmode="decimal" value="${nTxt(lu(v))}"></span>
+      <span class="fi"><label for="f-fee">课费</label><input id="f-fee" inputmode="decimal" value="${v.fee}"></span>
+      <span class="fi"><label for="f-cost">场地</label><input id="f-cost" inputmode="decimal" value="${v.cost||0}"></span></div>
       <div class="calc" id="f-calc"></div></div>
-    <div class="field"><span class="lbl">点名</span><div class="seg" role="group" id="f-status">
+    <div class="field" id="f-status-w" ${rcOn?'':'hidden'}><span class="lbl">点名 <span style="font-weight:500">· ${v.date>=ROLLCALL_SINCE?'到了、缺席计费；请假、不收费不计费':'点名功能上线前的课，没点名也按“已上”计费'}</span></span><div class="seg" role="group" id="f-status">
       <button type="button" data-s="normal" aria-pressed="${!marked(v)}">还没点名</button>
-      ${RC_OPTS.map(([k,t])=>`<button type="button" data-s="${k}" aria-pressed="${v.status===k}">${t}</button>`).join('')}</div>
-      <span class="hint">${v.date>=ROLLCALL_SINCE?'点名之后才计费、扣课时包：“到了”和“缺席·照常扣课”计费，“请假”和“到了·不收费”不计费。':'这节课在点名功能上线之前，没点名也按“已上”计费。'}</span></div>
-    ${later.length>1?`<div class="field"><span class="lbl">修改范围</span><div class="seg" role="group" id="f-scope"><button type="button" data-sc="one" aria-pressed="true">只改这一次</button><button type="button" data-sc="after" aria-pressed="false">这次及之后 ${later.length} 次</button></div><span class="hint">“之后”只同步学员、时间、场地、节数和费用；状态只改这一次。</span></div>`:''}
-    <div class="field"><label for="f-note">备注 / 上课内容</label><textarea id="f-note" placeholder="例如：正手高远球、步法">${esc(v.note||'')}</textarea></div>
+      ${RC_OPTS.map(([k,t])=>`<button type="button" data-s="${k}" aria-pressed="${v.status===k}">${t}</button>`).join('')}</div></div>
+    ${later.length>1?`<div class="fl"><span class="lbl">修改范围</span><div class="seg" role="group" id="f-scope" style="display:grid;grid-template-columns:1fr 1fr"><button type="button" data-sc="one" aria-pressed="true">只改这一次</button><button type="button" data-sc="after" aria-pressed="false">这次及之后 ${later.length} 次</button></div><span class="hint">“之后”只同步学员、时间、场地、节数和费用</span></div>`:''}
+    <div class="fl"><label for="f-note">备注</label><textarea id="f-note" rows="1" placeholder="上课内容，例如：正手高远球、步法">${esc(v.note||'')}</textarea></div>
     <div id="f-warn" class="warnbox" hidden></div>
     <div class="actions">${l?'<button class="btn danger" id="f-del" data-orig="删除">删除</button>':''}<span class="sp"></span><button class="btn" data-act="close">取消</button><button class="btn primary" id="f-save">保存</button></div>`,
   sheet=>{
@@ -1225,6 +1374,7 @@ function openLessonForm(opt){
     g('f-end').addEventListener('change',recalc);
     g('f-date').addEventListener('change',()=>{
       if(!l&&!wdsTouched&&g('f-date').value){wds.clear();wds.add(wdIdx(g('f-date').value));g('f-wds').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',wds.has(+b.dataset.w)));}
+      rcVis();
       checkWarn();
     });
     g('f-fee').addEventListener('input',calcLine);g('f-units').addEventListener('input',()=>{curUnits=parseFloat(g('f-units').value)||0;recalc('units');});
@@ -1232,7 +1382,8 @@ function openLessonForm(opt){
     sheet.querySelectorAll('[data-dur]').forEach(b=>b.addEventListener('click',()=>{const s=toMin(g('f-start').value||'19:00');g('f-end').value=fromMin(Math.min(s+(+b.dataset.dur),23*60+55));recalc();}));
     segBind(g('f-status'),'s',x=>{status=x;checkWarn();});
     segBind(g('f-scope'),'sc',x=>{scope=x;checkWarn();});
-    segBind(g('f-kind'),'k',x=>{fixed=x==='fixed';g('f-fixed').hidden=!fixed;checkWarn();});
+    const rcVis=()=>{if(l)return;const on=!fixed&&g('f-date').value<=ymd(new Date());g('f-status-w').hidden=!on;if(!on&&status!=='normal'){status='normal';g('f-status').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.s==='normal'));}};
+    segBind(g('f-kind'),'k',x=>{fixed=x==='fixed';g('f-fixed').hidden=!fixed;rcVis();checkWarn();});
     segBind(g('f-until-mode'),'u',x=>{untilMode=x;g('f-weeks-w').hidden=x!=='weeks';g('f-until').hidden=x==='weeks';checkWarn();});
     if(g('f-wds'))g('f-wds').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
       const i=+b.dataset.w;if(wds.has(i)){if(wds.size>1)wds.delete(i);}else wds.add(i);wdsTouched=true;
@@ -1275,20 +1426,20 @@ function openClientForm(id){
   const c=id?client(id):null;
   const v=c?Object.assign({},c):{name:'',type:'student',rate:'',rateUnit:'lesson',dur:90,venue:'',cost:0,phone:'',note:'',color:S.clients.size%8};
   openSheet(`${sheetHead(c?'编辑资料':'添加学员 / 机构')}
-    <div class="field"><span class="lbl">类型</span><div class="seg" role="group" id="c-type"><button type="button" data-t="student" aria-pressed="${v.type!=='org'}">私教学员</button><button type="button" data-t="org" aria-pressed="${v.type==='org'}">机构</button></div></div>
-    <div class="field"><label for="c-name">名称</label><input id="c-name" value="${esc(v.name)}" placeholder="学员姓名，或机构名称"></div>
-    <div class="row2"><div class="field"><label for="c-rate" id="c-rate-l">${v.rateUnit==='hour'?'课费（元/小时）':'课费（元/节）'}</label><input id="c-rate" inputmode="decimal" value="${v.rate}" placeholder="例如 150"></div>
-      <div class="field"><span class="lbl">计费方式</span><div class="seg" role="group" id="c-unit"><button type="button" data-u="lesson" aria-pressed="${v.rateUnit!=='hour'}">按节</button><button type="button" data-u="hour" aria-pressed="${v.rateUnit==='hour'}">按小时</button></div></div></div>
+    <div class="fl"><span class="lbl">类型</span><div class="seg" role="group" id="c-type" style="display:grid;grid-template-columns:1fr 1fr"><button type="button" data-t="student" aria-pressed="${v.type!=='org'}">私教学员</button><button type="button" data-t="org" aria-pressed="${v.type==='org'}">机构</button></div></div>
+    <div class="fl"><label for="c-name">名称</label><input id="c-name" value="${esc(v.name)}" placeholder="学员姓名，或机构名称"></div>
+    <div class="fl"><label for="c-rate" id="c-rate-l">${v.rateUnit==='hour'?'课费/小时':'课费/节'}</label><div class="tm2"><input id="c-rate" inputmode="decimal" value="${v.rate}" placeholder="元，例如 150">
+      <div class="seg" role="group" id="c-unit" style="flex:none"><button type="button" data-u="lesson" aria-pressed="${v.rateUnit!=='hour'}">按节</button><button type="button" data-u="hour" aria-pressed="${v.rateUnit==='hour'}">按小时</button></div></div></div>
     <div class="fixedbox" id="c-unitbox" ${v.rateUnit==='hour'?'hidden':''}>
       <div class="row2"><div class="field"><label for="c-unitmin">一节课多长（分钟）</label><input id="c-unitmin" inputmode="numeric" value="${v.unitMin||''}" placeholder="例如 90"></div>
         <div class="field"><label for="c-partial">不足一节时</label><select id="c-partial">${Object.entries(PARTIAL).map(([k,t])=>`<option value="${k}" ${(v.partial||'exact')===k?'selected':''}>${t}</option>`).join('')}</select></div></div>
       <div class="hint" id="c-example"></div></div>
     <div class="row2"><div class="field"><label for="c-dur">默认每次排多久（分钟）</label><input id="c-dur" inputmode="numeric" value="${v.dur||90}"></div>
       <div class="field"><label for="c-cost">每次场地费（元）</label><input id="c-cost" inputmode="decimal" value="${v.cost||0}"></div></div>
-    <div class="field"><label for="c-venue">常用场地</label><input id="c-venue" list="c-venues" value="${esc(v.venue||'')}" placeholder="排课时自动带出"><datalist id="c-venues">${venues().map(x=>`<option value="${esc(x)}">`).join('')}</datalist></div>
-    <div class="field"><label for="c-phone">联系方式</label><input id="c-phone" value="${esc(v.phone||'')}" placeholder="电话、微信或联系人（可不填）"></div>
-    <div class="field"><span class="lbl">课表颜色</span><div class="sw" id="c-color">${[0,1,2,3,4,5,6,7].map(i=>`<button type="button" class="c${i}" data-c="${i}" aria-label="颜色 ${i+1}" aria-pressed="${(v.color||0)%8===i}"></button>`).join('')}</div></div>
-    <div class="field"><label for="c-note">备注</label><textarea id="c-note" placeholder="水平、目标、家长信息等">${esc(v.note||'')}</textarea></div>
+    <div class="fl"><label for="c-venue">常用场地</label><input id="c-venue" list="c-venues" value="${esc(v.venue||'')}" placeholder="排课时自动带出"><datalist id="c-venues">${venues().map(x=>`<option value="${esc(x)}">`).join('')}</datalist></div>
+    <div class="fl"><label for="c-phone">联系方式</label><input id="c-phone" value="${esc(v.phone||'')}" placeholder="电话、微信或联系人（可不填）"></div>
+    <div class="fl"><span class="lbl">课表颜色</span><div class="sw" id="c-color">${[0,1,2,3,4,5,6,7].map(i=>`<button type="button" class="c${i}" data-c="${i}" aria-label="颜色 ${i+1}" aria-pressed="${(v.color||0)%8===i}"></button>`).join('')}</div></div>
+    <div class="fl"><label for="c-note">备注</label><textarea id="c-note" rows="1" placeholder="水平、目标、家长信息等">${esc(v.note||'')}</textarea></div>
     ${c?`<label class="check"><input type="checkbox" id="c-arc" ${c.archived?'checked':''}>停用（以往学员：不再出现在排课里，历史记录保留）</label>`
       :`<label class="check"><input type="checkbox" id="c-old">以前就在教这个学生，保存后补录之前上过的课</label>`}
     <div class="actions">${c?'<button class="btn danger" id="c-del" data-orig="删除">删除</button>':''}<span class="sp"></span><button class="btn" data-act="close">取消</button><button class="btn primary" id="c-save">保存</button></div>`,
@@ -1302,7 +1453,7 @@ function openClientForm(id){
         :'填了“一节课多长”，排课时就会按上课时长自动拆成几节、算好金额。';
     };
     segBind(g('c-type'),'t',x=>type=x);segBind(g('c-color'),'c',x=>color=+x);
-    segBind(g('c-unit'),'u',x=>{unit=x;g('c-unitbox').hidden=x==='hour';g('c-rate-l').textContent=x==='hour'?'课费（元/小时）':'课费（元/节）';});
+    segBind(g('c-unit'),'u',x=>{unit=x;g('c-unitbox').hidden=x==='hour';g('c-rate-l').textContent=x==='hour'?'课费/小时':'课费/节';});
     ['c-unitmin','c-rate','c-dur'].forEach(id=>g(id).addEventListener('input',example));g('c-partial').addEventListener('change',example);example();
     g('c-save').addEventListener('click',()=>{
       const name=g('c-name').value.trim();if(!name){toast('请填写名称');g('c-name').focus();return;}
@@ -1338,7 +1489,7 @@ function openHistoryForm(opt){
     <div class="row2"><div class="field"><label for="h-hours">一共多少小时</label><input id="h-hours" inputmode="decimal" value="${v.hours}"></div>
       <div class="field"><label for="h-fee">课酬合计（元）</label><input id="h-fee" inputmode="decimal" value="${v.fee}"></div></div>
     <div class="field"><label for="h-paid">那时已经收到的钱（元）</label><input id="h-paid" inputmode="decimal" value="${v.paid}"><span class="hint">全部结清就和课酬合计一样；还欠着的部分会算进“欠费”。</span></div>
-    <div class="field"><label for="h-note">备注</label><input id="h-note" value="${esc(v.note||'')}" placeholder="例如：暑假集训班"></div>
+    <div class="fl"><label for="h-note">备注</label><input id="h-note" value="${esc(v.note||'')}" placeholder="例如：暑假集训班"></div>
     <div class="actions">${h?'<button class="btn danger" id="h-del" data-orig="删除">删除</button>':''}<span class="sp"></span><button class="btn" data-act="close">取消</button><button class="btn primary" id="h-save">保存</button>${!h?'<button class="btn navy" id="h-save-more">保存并再录一个月</button>':''}</div>`,
   sheet=>{
     const g=x=>sheet.querySelector('#'+x);const touched={};
@@ -1374,34 +1525,44 @@ function clientMonths(s){
   s.hs.forEach(h=>{const r=row(h.ym);r.n+=+h.count||0;r.h+=+h.hours||0;r.fee+=+h.fee||0;r.paid+=+h.paid||0;r.his=true;});
   return Object.values(m).filter(r=>r.n||r.paid||r.up).sort((a,b)=>b.ym.localeCompare(a.ym));
 }
-let detailAll=false;
-function openClientDetail(id,showAll){
+function openClientDetail(id){
   const c=client(id);if(!c)return;
-  detailAll=!!showAll;
+  if(ui.detailFor!==id){ui.detailFor=id;ui.detailTab='lessons';}
+  const tab=ui.detailTab;
   const s=summary(c);
   const recent=s.ls.slice().sort((a,b)=>byTime(b,a));
   const up=recent.filter(l=>lstate(l)==='upcoming').reverse().slice(0,4);
   const pastAll=recent.filter(l=>lstate(l)!=='upcoming');
-  const past=detailAll?pastAll:pastAll.slice(0,8);
   const ps=s.ps.slice().sort((a,b)=>b.date.localeCompare(a.date));
   const months=clientMonths(s);
   const ser=seriesList(c.id);
   const mini=l=>{const st=lstate(l);return `<button class="row" data-act="editLesson" data-id="${l.id}"><span class="tm num">${mdTxt(l.date)} 周${wdOf(l.date)} ${l.start}</span><span class="mid"><span>${byUnit(c)?nTxt(lu(l))+' 节 · ':''}${isFixed(l)?'固定':'单次'} · ${esc(l.venue||'')}${l.note?' · '+esc(l.note):''}</span></span><span class="chip ${STATE_CHIP[st]}">${STATE_LABEL[st]}</span><span class="amt">${st==='cancelled'?'—':money(l.fee)}</span></button>`;};
-  openSheet(`<div class="sheet-h c${(c.color||0)%8}"><span class="ava">${esc(String(c.name).replace(/^示例·/,'').slice(0,1))}</span><h2>${esc(c.name)}</h2><button class="btn sm" data-act="editClient" data-id="${c.id}">编辑</button><button class="icon-btn" data-act="close" aria-label="关闭">${ICON.close}</button></div>
-    <div class="hint">${c.type==='org'?'机构':'私教学员'} · ${rateTxt(c)}${c.venue?' · '+esc(c.venue):''}${c.phone?' · '+esc(c.phone):''}${s.firstYm?` · ${ymTxt(s.firstYm)}开始上课`:''}${c.archived?' · 已停用':''}${c.note?'<br>'+esc(c.note):''}</div>
-    <div class="stat-strip"><div><span>累计上课</span><b>${nTxt(s.count)} 节</b></div><div><span>累计课时</span><b>${hrsTxt(s.hrs)} 小时</b></div><div><span>累计课酬</span><b>${money(s.due)}</b></div>
-      <div><span>${s.balance<0?(c.type==='org'?'待结算':'欠费'):'余额'}</span><b class="${s.balance<0?'neg':s.balance>0?'pos':''}">${money(Math.abs(s.balance))}</b></div></div>
-    ${s.remain!=null?`<div class="hint">课时包剩余 <b class="num" style="font-size:16px;color:var(--fg)">${s.remain}</b> 节（从第一次买课时包起算）</div>`:''}
-    <div class="inline"><button class="btn primary" data-act="newPay" data-client="${c.id}" ${s.balance<0?`data-amount="${-s.balance}"`:''}>记收款</button><button class="btn" data-act="newLessonFor" data-client="${c.id}">排课</button><button class="btn" data-act="newHistory" data-client="${c.id}">补录以往上课</button></div>
-    ${ser.length?`<div class="section-t">固定课</div><div class="mini">${ser.map(x=>`<div class="row"><span class="mid"><b>${ICON.loop.replace('<svg','<svg width="13" height="13" style="vertical-align:-1px;margin-right:4px"')}每${esc(wdsTxt(x.wds))} ${x.last.start}–${x.last.end}</b><span>已上 ${x.done.length} · 待上 ${x.up.length} · ${x.up.length?'排到 '+x.last.date:'已于 '+x.last.date+' 结束'}${x.last.venue?' · '+esc(x.last.venue):''}</span></span>
+  // 内容分三页：课程 / 按月 / 收款，标题、汇总和按钮固定在上面，下面这页自己滚动
+  let pane='';
+  if(tab==='lessons'){
+    pane=`${ser.length?`<div class="section-t">固定课</div><div class="mini">${ser.map(x=>`<div class="row"><span class="mid"><b>${ICON.loop.replace('<svg','<svg width="13" height="13" style="vertical-align:-1px;margin-right:4px"')}每${esc(wdsTxt(x.wds))} ${x.last.start}–${x.last.end}</b><span>已上 ${x.done.length} · 待上 ${x.up.length} · ${x.up.length?'排到 '+x.last.date:'已于 '+x.last.date+' 结束'}${x.last.venue?' · '+esc(x.last.venue):''}</span></span>
       <span class="inline" style="flex-wrap:nowrap"><button class="btn sm" data-act="extendSeries" data-sid="${x.sid}">续排 8 周</button>${x.up.length?`<button class="btn sm danger" data-act="endSeries" data-sid="${x.sid}" data-orig="结束">结束</button>`:''}</span></div>`).join('')}</div>`:''}
     ${up.length?`<div class="section-t">接下来</div><div class="mini">${up.map(mini).join('')}</div>`:''}
-    <div class="section-t">按月历史</div>${months.length?`<div class="mini tbl-wrap"><table><thead><tr><th>月份</th><th class="n">节数</th><th class="n">小时</th><th class="n">课酬</th><th class="n">收款</th></tr></thead><tbody>${months.map(r=>`<tr><td>${ymTxt(r.ym)}${r.his?' <span class="chip">补录</span>':''}${r.up?` <span class="chip acc">待上 ${r.up}</span>`:''}</td><td class="n">${nTxt(r.n)}</td><td class="n">${hrsTxt(r.h)}</td><td class="n">${money(r.fee)}</td><td class="n">${r.paid?money(r.paid):'—'}</td></tr>`).join('')}
+    <div class="section-t">上过的课 ${pastAll.length} 次</div>${pastAll.length?`<div class="mini">${pastAll.map(mini).join('')}</div>`:'<div class="hint">在这个工具里还没有上过课。</div>'}`;
+  }else if(tab==='months'){
+    pane=`${months.length?`<div class="mini tbl-wrap"><table><thead><tr><th>月份</th><th class="n">节数</th><th class="n">小时</th><th class="n">课酬</th><th class="n">收款</th></tr></thead><tbody>${months.map(r=>`<tr><td>${ymTxt(r.ym)}${r.his?' <span class="chip">补录</span>':''}${r.up?` <span class="chip acc">待上 ${r.up}</span>`:''}</td><td class="n">${nTxt(r.n)}</td><td class="n">${hrsTxt(r.h)}</td><td class="n">${money(r.fee)}</td><td class="n">${r.paid?money(r.paid):'—'}</td></tr>`).join('')}
       <tr class="tot"><td>合计</td><td class="n">${nTxt(s.count)}</td><td class="n">${hrsTxt(s.hrs)}</td><td class="n">${money(s.due)}</td><td class="n">${money(s.paid)}</td></tr></tbody></table></div>`:'<div class="hint">还没有上课记录。以前教过的，可以点“补录以往上课”。</div>'}
     ${s.hs.length?`<div class="section-t">补录记录</div><div class="mini">${s.hs.slice().sort((a,b)=>b.ym.localeCompare(a.ym)).map(h=>`<button class="row" data-act="editHistory" data-id="${h.id}"><span class="tm num">${ymTxt(h.ym)}</span><span class="mid"><span>${h.count} 节 · ${hrsTxt(+h.hours||0)} 小时${h.note?' · '+esc(h.note):''}</span></span><span class="amt">${money(h.fee)}</span></button>`).join('')}</div>`:''}
-    <div class="section-t"><span>上过的课 ${pastAll.length} 次</span><span class="sp"></span>${pastAll.length>8&&!detailAll?`<button class="btn sm" data-act="detailAll" data-id="${c.id}">全部显示</button>`:''}</div>${past.length?`<div class="mini">${past.map(mini).join('')}</div>`:'<div class="hint">在这个工具里还没有上过课。</div>'}
-    <div class="section-t">收款记录</div>${ps.length?`<div class="mini">${ps.map(p=>`<button class="row" data-act="editPay" data-id="${p.id}"><span class="tm num">${p.date}</span><span class="mid"><span>${esc(p.method||'')}${+p.lessons>0?` · 课时包 ${p.lessons} 节`:''}${p.note?' · '+esc(p.note):''}</span></span><span class="amt">${money(p.amount)}</span></button>`).join('')}</div>`:'<div class="hint">还没有收款记录。</div>'}`,
+    <div><button class="btn sm" data-act="newHistory" data-client="${c.id}">${ICON.plus}补录以往上课</button></div>`;
+  }else{
+    pane=ps.length?`<div class="mini">${ps.map(p=>`<button class="row" data-act="editPay" data-id="${p.id}"><span class="tm num">${p.date}</span><span class="mid"><span>${esc(p.method||'')}${+p.lessons>0?` · 课时包 ${p.lessons} 节`:''}${p.note?' · '+esc(p.note):''}</span></span><span class="amt">${money(p.amount)}</span></button>`).join('')}</div>`:'<div class="hint">还没有收款记录。</div>';
+  }
+  const tabs=[['lessons',`课程 ${s.ls.length}`],['months','按月历史'],['pays',`收款 ${ps.length}`]];
+  const same=!!document.querySelector(`#sheet-root .sheet[data-cid="${c.id}"]`);   // 只是切换分页：不再播放弹出动画
+  openSheet(`<div class="sheet-h c${(c.color||0)%8}"><span class="ava">${esc(String(c.name).replace(/^示例·/,'').slice(0,1))}</span><h2>${esc(c.name)}</h2><button class="btn sm" data-act="editClient" data-id="${c.id}">编辑</button><button class="icon-btn" data-act="close" aria-label="关闭">${ICON.close}</button></div>
+    <div class="hint">${s.remain!=null?`<b style="color:var(--fg)">课时包剩 <span class="num" style="font-size:15px">${s.remain}</span> 节</b> · `:''}${c.type==='org'?'机构':'私教学员'} · ${rateTxt(c)}${c.venue?' · '+esc(c.venue):''}${c.phone?' · '+esc(c.phone):''}${s.firstYm?` · ${ymTxt(s.firstYm)}开始上课`:''}${c.archived?' · 已停用':''}${c.note?'<br>'+esc(c.note):''}</div>
+    <div class="stat-strip"><div><span>累计上课</span><b>${nTxt(s.count)} 节</b></div><div><span>累计课时</span><b>${hrsTxt(s.hrs)} 时</b></div><div><span>累计课酬</span><b>${money(s.due)}</b></div>
+      <div><span>${s.balance<0?(c.type==='org'?'待结算':'欠费'):'余额'}</span><b class="${s.balance<0?'neg':s.balance>0?'pos':''}">${money(Math.abs(s.balance))}</b></div></div>
+    <div class="inline"><button class="btn sm primary" data-act="newPay" data-client="${c.id}" ${s.balance<0?`data-amount="${-s.balance}"`:''}>记收款</button><button class="btn sm" data-act="newLessonFor" data-client="${c.id}">排课</button><button class="btn sm" data-act="newHistory" data-client="${c.id}">补录以往上课</button></div>
+    <div class="seg full" role="group" aria-label="详情分页">${tabs.map(([k,t])=>`<button data-act="detailTab" data-t="${k}" data-id="${c.id}" aria-pressed="${tab===k}">${t}</button>`).join('')}</div>
+    <div class="pane">${pane}</div>`,
   sheet=>{
+    sheet.dataset.cid=c.id;
     sheet.querySelectorAll('[data-act=endSeries]').forEach(b=>{
       b.removeAttribute('data-act');
       b.addEventListener('click',e=>{
@@ -1409,7 +1570,7 @@ function openClientDetail(id,showAll){
         armDelete(e.currentTarget,`删掉待上的 ${x.up.length} 次课`,()=>{commit(x.up.map(l=>['del','lessons',l.id]));toast(`固定课已结束，删掉了 ${x.up.length} 次待上的课`);openClientDetail(c.id);});
       });
     });
-  });
+  },'tall'+(same?' noanim':''));
 }
 function extendSeries(sid,weeks){
   const x=seriesList().find(z=>z.sid===sid);if(!x)return;
@@ -1437,12 +1598,12 @@ function openPayForm(opt){
   const c0=client(opt.client)||cs[0];
   const v=p?Object.assign({},p):{clientId:c0.id,date:ymd(new Date()),amount:opt.amount?r2(+opt.amount):'',method:c0.type==='org'?'机构结算':'微信',lessons:'',note:''};
   openSheet(`${sheetHead(p?'编辑收款':'记一笔收款')}
-    <div class="field"><label for="p-client">付款人</label><select id="p-client">${clientOptions(v.clientId,v.clientId)}</select></div>
+    <div class="fl"><label for="p-client">付款人</label><select id="p-client">${clientOptions(v.clientId,v.clientId)}</select></div>
     <div class="row2"><div class="field"><label for="p-amount">金额（元）</label><input id="p-amount" inputmode="decimal" value="${v.amount}" placeholder="0"></div>
       <div class="field"><label for="p-date">日期</label><input type="date" id="p-date" value="${v.date}"></div></div>
-    <div class="field"><span class="lbl">方式</span><div class="seg" role="group" id="p-method">${METHODS.map(m=>`<button type="button" data-m="${m}" aria-pressed="${v.method===m}">${m}</button>`).join('')}</div></div>
-    <div class="field"><label for="p-lessons">课时包节数（可不填）</label><input id="p-lessons" inputmode="numeric" value="${v.lessons||''}" placeholder="例如买 10 节课就填 10"><span class="hint">填了之后学员卡片会显示剩余课时。</span></div>
-    <div class="field"><label for="p-note">备注</label><input id="p-note" value="${esc(v.note||'')}" placeholder="例如：10月课时费"></div>
+    <div class="fl"><span class="lbl">方式</span><div class="seg" role="group" id="p-method">${METHODS.map(m=>`<button type="button" data-m="${m}" aria-pressed="${v.method===m}">${m}</button>`).join('')}</div></div>
+    <div class="fl"><label for="p-lessons">课时包</label><input id="p-lessons" inputmode="numeric" value="${v.lessons||''}" placeholder="买了几节（可不填），例如 10"><span class="hint">填了之后会显示剩余课时。</span></div>
+    <div class="fl"><label for="p-note">备注</label><input id="p-note" value="${esc(v.note||'')}" placeholder="例如：10月课时费"></div>
     <div class="actions">${p?'<button class="btn danger" id="p-del" data-orig="删除">删除</button>':''}<span class="sp"></span><button class="btn" data-act="close">取消</button><button class="btn primary" id="p-save">保存</button></div>`,
   sheet=>{
     const g=x=>sheet.querySelector('#'+x);let method=v.method;
@@ -1495,12 +1656,12 @@ function openRemind(){
     <label class="check"><input type="checkbox" id="r-hour" ${p.hourBefore?'checked':''}>上课前 1 小时再提醒一次</label>
     <button class="btn primary block" id="r-go">${ICON.bell}导出到手机日历</button>
     <div class="hint" id="r-count"></div>
-    <div class="section-t">怎么导入</div>
+    <details class="how"><summary>怎么导入到手机日历？</summary>
     <ol class="steps">
       <li><b>iPhone</b>：点上面的按钮，会弹出分享菜单。菜单里有“日历”就直接选；没有的话选“存储到‘文件’”，再打开“文件”App，点这个 .ics 文件，选“添加全部”。</li>
       <li><b>安卓</b>：在弹出的菜单里选系统自带的日历；如果是直接下载了，就到下载列表里点开这个 .ics 文件，用日历导入。</li>
       <li>建议在日历里新建一个“羽球课”日历专门放这些课。课表有改动时重新导出一次；如果出现重复的课，删掉这个日历重新导入就行。</li>
-    </ol>
+    </ol></details>
     <div class="hint">${tmN?`明天有 ${tmN} 次课。`:'明天没有课。'}每次打开课表，首页也会显示今天和明天的课。</div>`,
   sheet=>{
     const g=x=>sheet.querySelector('#'+x);
@@ -1524,16 +1685,14 @@ function openSettings(){
     <div class="stat-strip"><div><span>学员 / 机构</span><b>${n[0]}</b></div><div><span>课程</span><b>${n[1]}</b></div><div><span>收款</span><b>${n[2]}</b></div><div><span>补录</span><b>${n[3]}</b></div></div>
     <div class="inline"><span style="flex:1">${esc(syncTxt)}</span><button class="btn sm" data-act="syncNow">立即同步</button></div>
     <div class="hint">云端：${esc(host)}${CFG.baked?'':' · <button class="btn sm" data-act="changeCfg" style="height:26px">更换云端</button>'}</div>
-    <div class="section-t">提醒</div>
-    <div class="inline"><button class="btn" data-act="remind">${ICON.bell}手机提醒（导出到日历）</button></div>
-    <div class="section-t">备份</div>
-    <div class="inline"><button class="btn" data-act="exportJson">导出备份（JSON）</button><button class="btn" data-act="importJson">从备份恢复</button></div>
-    <div class="section-t">导出表格（Excel 可打开）</div>
-    <div class="inline"><button class="btn" data-act="exportLessons">课程明细 CSV</button><button class="btn" data-act="exportPays">收款记录 CSV</button></div>
-    <div class="section-t">示例数据</div>
-    <div class="inline">${hasDemo()?'<button class="btn" data-act="clearDemo">清除示例数据</button>':'<button class="btn" data-act="loadDemo">载入示例数据</button>'}</div>
-    <div class="section-t">危险操作</div>
-    <div class="inline"><button class="btn danger" id="s-wipe" data-orig="清空这个账号的全部数据">清空这个账号的全部数据</button></div>`,
+    <div class="setgrid">
+      <span>提醒</span><div class="inline"><button class="btn sm" data-act="remind">${ICON.bell}手机提醒（导出到日历）</button></div>
+      <span>备份</span><div class="inline"><button class="btn sm" data-act="exportJson">导出备份</button><button class="btn sm" data-act="importJson">从备份恢复</button></div>
+      <span>表格</span><div class="inline"><button class="btn sm" data-act="exportLessons">课程明细 CSV</button><button class="btn sm" data-act="exportPays">收款记录 CSV</button></div>
+      <span>示例</span><div class="inline">${hasDemo()?'<button class="btn sm" data-act="clearDemo">清除示例数据</button>':'<button class="btn sm" data-act="loadDemo">载入示例数据</button>'}</div>
+      <span>危险</span><div class="inline"><button class="btn sm danger" id="s-wipe" data-orig="清空这个账号的全部数据">清空这个账号的全部数据</button></div>
+    </div>
+    <div class="hint">“导出备份”是 JSON 文件，可以用“从备份恢复”还原；CSV 表格用 Excel 打开。</div>`,
   sheet=>{
     sheet.querySelector('#s-wipe').addEventListener('click',e=>armDelete(e.currentTarget,'再点一次，全部删除且无法恢复',()=>{
       const ops=[];KINDS.forEach(k=>S[k].forEach((_,i)=>ops.push(['del',k,i])));commit(ops);closeSheet();toast('已清空');
@@ -1637,30 +1796,36 @@ function loadDemo(){
 }
 function clearDemo(){const ops=[];KINDS.forEach(k=>S[k].forEach(o=>{if(o.demo)ops.push(['del',k,o.id]);}));commit(ops);closeSheet();toast('示例数据已清除');}
 
+const toTop=()=>{window.scrollTo(0,0);const a=$('.app');if(a)a.scrollTop=0;};
+
 /* ---------- toast ---------- */
 let tt=0;
 function toast(msg){const r=$('#toast-root');r.innerHTML=`<div class="toast" role="status">${esc(msg)}</div>`;clearTimeout(tt);tt=setTimeout(()=>{r.innerHTML='';},2600);}
 
 /* ---------- events ---------- */
 const A={
-  go:t=>{ui.view=t.dataset.v;saveUi();render();window.scrollTo(0,0);},
+  go:t=>{ui.view=t.dataset.v;saveUi();render();toTop();},
   wk:t=>{const d=+t.dataset.d;ui.ws=d?addDays(ui.ws,d):weekStart(new Date());render();},
   mode:t=>{ui.mode=t.dataset.m;saveUi();render();},
   filter:t=>{ui.filter=t.dataset.f;render();},
   mon:t=>{const d=+t.dataset.d;ui.month=d?addMonths(ui.month,d):ymOf(new Date());render();},
   yr:t=>{const d=+t.dataset.d;ui.year=d?ui.year+d:new Date().getFullYear();render();},
   statMode:t=>{ui.statMode=t.dataset.m;if(ui.statMode==='year')ui.year=+ui.month.slice(0,4);saveUi();render();},
-  pickMonth:t=>{ui.month=t.dataset.ym;ui.statMode='month';saveUi();render();window.scrollTo(0,0);},
+  pickMonth:t=>{ui.month=t.dataset.ym;ui.statMode='month';saveUi();render();toTop();},
+  statTab:t=>{ui.statTab=t.dataset.t;render();},
+  pmon:t=>{const d=+t.dataset.d;ui.payMonth=d?addMonths(ui.payMonth,d):ymOf(new Date());render();},
+  arc:()=>{ui.showArchived=!ui.showArchived;render();},
+  overdue:()=>openOverdue(),
+  detailTab:t=>{ui.detailTab=t.dataset.t;openClientDetail(t.dataset.id);},
   slot:(t,e)=>{
     if(t.dataset.start){openLessonForm({date:t.dataset.date,start:t.dataset.start});return;}
     const r=t.getBoundingClientRect(),y=e.clientY-r.top;
-    const m=Math.floor(((ui._sH||8)*60+y/(ui._H||46)*60)/30)*30;
+    const m=Math.floor(((ui._sH||8)*60+y/Math.max(1,r.height)*(ui._rows||14)*60)/30)*30;
     openLessonForm({date:t.dataset.date,start:fromMin(Math.max(0,Math.min(m,23*60)))});
   },
   editLesson:t=>openLessonForm({id:t.dataset.id}),
   newLessonFor:t=>openLessonForm({clientId:t.dataset.client,date:ymd(new Date())}),
   clientDetail:t=>openClientDetail(t.dataset.id),
-  detailAll:t=>openClientDetail(t.dataset.id,true),
   editClient:t=>openClientForm(t.dataset.id),
   newClient:()=>openClientForm(),
   newHistory:t=>openHistoryForm({client:t.dataset.client}),
@@ -1668,7 +1833,7 @@ const A={
   extendSeries:t=>{const x=seriesList().find(z=>z.sid===t.dataset.sid);extendSeries(t.dataset.sid,8);if(x)openClientDetail(x.clientId);},
   newPay:t=>openPayForm({client:t.dataset.client,amount:t.dataset.amount}),
   editPay:t=>openPayForm({id:t.dataset.id}),
-  fab:()=>{if(ui.view==='week'){const today=new Date();const inWeek=today>=ui.ws&&today<addDays(ui.ws,7);openLessonForm({date:inWeek?ymd(today):ymd(ui.ws)});}else if(ui.view==='clients')openClientForm();else if(ui.view==='pay')openPayForm();},
+  fab:()=>{if(ui.view==='clients')openClientForm();else if(ui.view==='pay')openPayForm();else{const today=new Date();const inWeek=ui.view==='week'&&!(today>=ui.ws&&today<addDays(ui.ws,7));openLessonForm({date:inWeek?ymd(ui.ws):ymd(today)});}},
   settings:()=>{if(store.mode==='app')openSettings();},
   remind:()=>openRemind(),
   close:()=>closeSheet(),
@@ -1684,7 +1849,6 @@ const A={
   legacyUp:()=>{const lg=legacy();if(!lg)return;const ops=[];KINDS.forEach(k=>(lg.d[k]||[]).forEach(o=>{if(o&&o.id)ops.push(['put',k,o]);}));commit(ops);lsSet(LEGACY_KEY,null);toast(`已把 ${ops.length} 条记录存到你的账号`);},
   legacyNo:()=>{lsSet(LEGACY_NO,'1');render();},
   rcMore:t=>{ui.rcOpen=ui.rcOpen===t.dataset.id?null:t.dataset.id;render();},
-  rcAll:()=>{ui.rcAll=true;render();},
   rc:t=>{
     const l=S.lessons.get(t.dataset.id);if(!l)return;
     const st=t.dataset.s;ui.rcOpen=null;
@@ -1704,7 +1868,6 @@ document.addEventListener('click',e=>{
   const t=e.target.closest('[data-act]');if(!t)return;
   const fn=A[t.dataset.act];if(fn){fn(t,e);}
 });
-document.addEventListener('change',e=>{if(e.target.id==='show-arc'){ui.showArchived=e.target.checked;render();}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#sheet-root').firstChild)closeSheet();});
 let lastW=window.innerWidth;
 window.addEventListener('resize',()=>{if((lastW<860)!==(window.innerWidth<860)){lastW=window.innerWidth;scheduleRender();}});
