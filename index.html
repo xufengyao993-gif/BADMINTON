@@ -293,6 +293,9 @@ button.row:hover{background:color-mix(in oklab,var(--surface-2) 50%,transparent)
 .row .mid span{font-size:12.5px;color:var(--muted)}
 .row .amt{font-family:var(--font-num);font-size:16px;font-weight:600;text-align:right;white-space:nowrap}
 .row .stripe{width:4px;align-self:stretch;border-radius:2px;background:var(--cc);flex:none}
+.row.cxl .tm,.row.cxl .mid b{text-decoration:line-through;color:var(--muted)}
+.row.cxl .stripe{opacity:.35}
+.day-group .row .mid span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* clients */
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
@@ -987,13 +990,15 @@ function viewWeek(){
   const fixedN=live.filter(isFixed).length;
   const sumHtml=`<div class="wk-sum"><span><b>${live.length}</b>次课</span><span><b>${nTxt(sum(live,lu))}</b>节</span><span class="xs"><b>${fixedN}</b>固定 · <b>${live.length-fixedN}</b>单次</span><span><b>${hrsTxt(sum(live,dur))}</b>小时</span><span><b>${short(sum(live,l=>l.fee))}</b>元</span><span><b>${doneN}</b>已上</span></div>`;
   if(ui.mode==='list'){
+    // 只列出有课的日子（请假/取消的课也算，带划线显示），没课的日子不占地方
     let body='';
     days.forEach((d,i)=>{
       const dl=ls.filter(l=>l.date===ds[i]).sort(byTime);
+      if(!dl.length)return;
       body+=`<div class="day-group"><div class="day-h ${ds[i]===today?'today':''}"><span>周${WD[i]}</span><span class="num">${d.getMonth()+1}/${d.getDate()}</span>${ds[i]===today?'<span class="chip acc">今天</span>':ds[i]===tmr?'<span class="chip navy">明天</span>':''}</div>`;
-      body+=dl.length?dl.map(lessonRow).join(''):`<button class="row muted" data-act="slot" data-date="${ds[i]}" data-start="19:00"><span class="tm">—</span><span class="mid"><span>没有课，点这里排一节</span></span></button>`;
-      body+='</div>';
+      body+=dl.map(lessonRow).join('')+'</div>';
     });
+    if(!body)body=`<div class="empty"><h3>这周没有排课</h3><div class="bar-row"><button class="btn primary" data-act="fab">${ICON.plus}排课</button></div></div>`;
     return out+`<div class="panel grow col"><div class="scroll">${body}</div>${sumHtml}</div>`;
   }
   const [sH,eH]=hourRange(ws,ls),rows=eH-sH,pct=m=>((m-sH*60)/(rows*60)*100).toFixed(3)+'%';
@@ -1024,7 +1029,7 @@ function viewWeek(){
 }
 function lessonRow(l){
   const st=lstate(l),fx=isFixed(l);
-  return `<button class="row c${cColor(l.clientId)}" data-act="editLesson" data-id="${l.id}"><span class="stripe"></span><span class="tm">${l.start}–${l.end}</span>
+  return `<button class="row c${cColor(l.clientId)} ${st==='cancelled'?'cxl':''}" data-act="editLesson" data-id="${l.id}"><span class="stripe"></span><span class="tm">${l.start}–${l.end}</span>
     <span class="mid"><b>${esc(cName(l.clientId))}</b><span>${byUnit(client(l.clientId))?nTxt(lu(l))+' 节 · ':''}${fx?'固定课':'单次课'} · ${esc(l.venue||'未填场地')}${l.note?' · '+esc(l.note):''}</span></span>
     <span class="chip ${STATE_CHIP[st]}">${STATE_LABEL[st]}</span><span class="amt">${st==='cancelled'?'—':money(l.fee)}</span></button>`;
 }
